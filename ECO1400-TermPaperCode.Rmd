@@ -1,0 +1,91 @@
+---
+title: "ECO1400 Term Paper"
+output: pdf_document
+date: "2022-10-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr) # Use rename function in dplyr to rename variables
+library(readxl)
+```
+
+Import data and merge using personal and interview IDs. 
+```{r}
+# Remove everything in environment
+rm(list = ls())
+
+# Import data
+df = read_xlsx("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/J313715.xlsx")
+
+# Rename variables
+names(df)[names(df) == "CS14V17"] <- "parents_sep_ind"
+# 1 means parents separated, 5 means they did not separate, 
+# 9 means NA/not answered, 0 means inappliable
+
+names(df)[names(df) == "CS14V18"] <- "age_parents_1st_sep"
+# 0 means parents did not separate, 99 means inapplicable
+
+names(df)[names(df) == "ER34201"] <- "interview_num_13" # 2013 interview number
+
+names(df)[names(df) == "ER34202"] <- "sequence_num_13"  # 2013 sequence number
+# 1-20 means individuals in family at time of 2013 interview
+
+names(df)[names(df) == "ER34202"] <- "age_13"  # age in 2013
+
+names(df)[names(df) == "ER34216"] <- "emp_stat_13"  # employment status in 2013
+df$emp_stat_13[emp_stat_13 = 1] <- "working"
+df$emp_stat_13[emp_stat_13 = 2] <- "temp_laid_off"
+df$emp_stat_13[emp_stat_13 == 3] <- "unemployed"
+df$emp_stat_13[emp_stat_13 == 4] <- "retired"
+df$emp_stat_13[emp_stat_13 == 5] <- "perm_disabled"
+df$emp_stat_13[emp_stat_13 == 6] <- "keeping_house"
+df$emp_stat_13[emp_stat_13 == 7] <- "student"
+df$emp_stat_13[emp_stat_13 == 8] <- "other"
+df$emp_stat_13[emp_stat_13 == 9] <- "refused"
+
+
+names(df)[names(df) == "ER34251D"] <- "OFUM_total_taxable_income"
+# 0 means inapplicable
+
+names(df)[names(df) == "ER34020"] <- "yrs_educ_09" # years of education in 2009 survey
+names(df)[names(df) == "ER34119"] <- "yrs_educ_11" # years of education in 2011 survey
+names(df)[names(df) == "ER34230"] <- "yrs_educ_13" # years of education in 2013 survey
+# 1-17 means highest grade or year of school completed
+# 98 means don't know
+# 99 NA
+# 0 means inapplicable
+
+names(df)[names(df) == "ER34219"] <- "highest_grade" # highest year of school completed in 2013 survey
+
+# Keep rows with divorce (separation) data
+df_sep = df[df$parents_sep_ind %in% c(1,5),]
+boxplot(x=df_sep$parents_sep_ind, y=df_sep$yrs_educ_13, col=c("blue","red"))
+
+table_sep_emp = data.frame(table(data.frame(df_sep$emp_stat_13,df_sep$parents_sep_ind)))
+table = data.frame(table_sep_emp$df_sep.emp_stat_13[1:8], table_sep_emp$Freq[1:8],table_sep_emp$Freq[9:16])
+names(table)[1] <- "employment_status"; names(table)[2] <- "frequency_separated"; names(table)[3] <- "frequency_together"
+table$frequency_separated = table$frequency_separated / sum(table$frequency_separated)
+table$frequency_together = table$frequency_together / sum(table$frequency_together)
+
+
+keeps <- c("age_parents_1st_sep","OFUM_total_taxable_income")
+df = df[keeps]
+# Drop rows with NAs in age_parents_1st_sep and OFUM_total_taxable_income
+df_separated = df[!(df$age_parents_1st_sep==0), ]
+df_separated = df_separated[!(df_separated$age_parents_1st_sep==99), ]
+df_separated = df_separated[!(df_separated$OFUM_total_taxable_income==0), ]
+df_separated = df_separated[!(df_separated$age_parents_1st_sep=="NA"), ]
+df_separated = df_separated[complete.cases(df_separated),]
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
