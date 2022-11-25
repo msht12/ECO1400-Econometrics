@@ -17,7 +17,30 @@ Import data and merge using personal and interview IDs.
 rm(list = ls())
 
 # Import data
-df = read_xlsx("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/J313715.xlsx")
+df = read_xlsx("J313750.xlsx")
+
+# Filter out non-legitimate responses
+df = filter(df, parents_sep_ind==1 | df$parents_sep_ind==5)
+
+# Filter out non-legitimate responses
+df = filter(df, age_parents_1st_sep>0 & df$age_parents_1st_sep<99)
+
+# Filter out non-legitimate responses
+df = filter(df, yrs_educ_2013>0 & df$yrs_educ_2013<99)
+
+# Histogram of people with parents separated
+hist(df$yrs_educ_2013[df$parents_sep_ind==1], freq=FALSE)
+
+# Histogram of people with parents who did not separate
+hist(df$yrs_educ_2013[df$parents_sep_ind==5], freq=FALSE)
+
+# People with parents who separated tend of have lower years of education
+
+# DEMOGRAPHICS -----------------------------------------
+names(df)[names(df) == "CS14V4"] <- "Sex"
+df$Sex[df$Sex == 1] <- "M" # Male
+df$Sex[df$Sex == 2] <- "F" # Female
+
 
 # Rename variables
 names(df)[names(df) == "CS14V17"] <- "parents_sep_ind"
@@ -27,9 +50,9 @@ names(df)[names(df) == "CS14V17"] <- "parents_sep_ind"
 names(df)[names(df) == "CS14V18"] <- "age_parents_1st_sep"
 # 0 means parents did not separate, 99 means inapplicable
 
-names(df)[names(df) == "ER34201"] <- "interview_num_13" # 2013 interview number
+names(df)[names(df) == "ER34201"] <- "family_num_2013" # 2013 family interview number
 
-names(df)[names(df) == "ER34202"] <- "sequence_num_13"  # 2013 sequence number
+names(df)[names(df) == "ER34202"] <- "family_member_2013"  # 2013 sequence number
 # 1-20 means individuals in family at time of 2013 interview
 
 names(df)[names(df) == "ER34202"] <- "age_13"  # age in 2013
@@ -37,21 +60,24 @@ names(df)[names(df) == "ER34202"] <- "age_13"  # age in 2013
 names(df)[names(df) == "ER34216"] <- "emp_stat_13"  # employment status in 2013
 df$emp_stat_13[emp_stat_13 = 1] <- "working"
 df$emp_stat_13[emp_stat_13 = 2] <- "temp_laid_off"
-df$emp_stat_13[emp_stat_13 == 3] <- "unemployed"
-df$emp_stat_13[emp_stat_13 == 4] <- "retired"
-df$emp_stat_13[emp_stat_13 == 5] <- "perm_disabled"
-df$emp_stat_13[emp_stat_13 == 6] <- "keeping_house"
-df$emp_stat_13[emp_stat_13 == 7] <- "student"
-df$emp_stat_13[emp_stat_13 == 8] <- "other"
+df$emp_stat_13[emp_stat_13 = 3] <- "unemployed"
+df$emp_stat_13[emp_stat_13 = 4] <- "retired"
+df$emp_stat_13[emp_stat_13 = 5] <- "perm_disabled"
+df$emp_stat_13[emp_stat_13 = 6] <- "keeping_house"
+df$emp_stat_13[emp_stat_13 = 7] <- "student"
+df$emp_stat_13[emp_stat_13 = 8] <- "other"
 df$emp_stat_13[emp_stat_13 == 9] <- "refused"
 
 
 names(df)[names(df) == "ER34251D"] <- "OFUM_total_taxable_income"
 # 0 means inapplicable
 
+names(df)[names(df) == "ER34202"] <- "OFUM_total_taxable_income"
+
+
 names(df)[names(df) == "ER34020"] <- "yrs_educ_09" # years of education in 2009 survey
 names(df)[names(df) == "ER34119"] <- "yrs_educ_11" # years of education in 2011 survey
-names(df)[names(df) == "ER34230"] <- "yrs_educ_13" # years of education in 2013 survey
+names(df)[names(df) == "ER34230"] <- "yrs_educ_2013" # years of education in 2013 survey
 # 1-17 means highest grade or year of school completed
 # 98 means don't know
 # 99 NA
