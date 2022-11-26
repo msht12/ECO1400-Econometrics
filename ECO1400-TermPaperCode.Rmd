@@ -6,84 +6,165 @@ date: "2022-10-01"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
-library(dplyr) # Use rename function in dplyr to rename variables
-library(readxl)
+library(dplyr)  # Use rename function in dplyr to rename variables
+library(readxl) # Use read_xlsx to read in Excel data file
+library(tidyr)
+setwd("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics")
 ```
 
 Import data and merge using personal and interview IDs. 
 ```{r}
+# DATA CLEANING --------------------------------------------------
+
 # Remove everything in environment
 rm(list = ls())
 
 # Import data
 df = read_xlsx("J313750.xlsx")
 
-# Filter out non-legitimate responses
-df = filter(df, parents_sep_ind==1 | df$parents_sep_ind==5)
+# Rename and recode (if necessary) variables ---------------------
 
-# Filter out non-legitimate responses
-df = filter(df, age_parents_1st_sep>0 & df$age_parents_1st_sep<99)
+# ----------------------------------------------------------------
+# Dummy variable to indicate whether respondent's parents separated
+names(df)[names(df) == "CS14V17"] <- "parents_sep_ind"
+# 1 means parents separated, 5 means they did not separate, 
+# 9 means NA/not answered, 0 means inappliable
 
-# Filter out non-legitimate responses
-df = filter(df, yrs_educ_2013>0 & df$yrs_educ_2013<99)
+# parents_sep_ind is a dummy variable. 1 means parents separated, 0 means
+# parent did not separate, NA means NA
+df$parents_sep_ind[df$parents_sep_ind == 9] <- NA # recode no answer (9) to NA
+df$parents_sep_ind[df$parents_sep_ind == 0] <- NA # recode inapplicable (0) to NA
+df$parents_sep_ind[df$parents_sep_ind == 5] <- 0  # recode did not separate (5) to 0
+
+# ----------------------------------------------------------------
+# Dummy variable to indicate whether respondent is male
+names(df)[names(df) == "CS14V4"] <- "male"
+# 1 means male, 2 means female
+
+df$male[df$male == 2] <- 0 # recode 2 to 0
+
+# ----------------------------------------------------------------
+# Age of respondent at the 2013 PSID interview
+names(df)[names(df) == "CS14V5"] <- "age"
+
+# ----------------------------------------------------------------
+# Age of respondent when parents first separated
+
+names(df)[names(df) == "CS14V18"] <- "age_parents_1st_sep"
+# 0 means parents did not separate, 99 means inapplicable
+
+df$age_parents_1st_sep[df$age_parents_1st_sep == 99] <- NA # recode inapplicable (99) to NA
+
+# ----------------------------------------------------------------
+# ID number of the family being interviewed. If the family has one person only, there
+# will only be one observation with that family number. If there are multiple people in
+# the family, there will be multiple observations with that family number.
+
+names(df)[names(df) == "ER34201"] <- "family_num_2013" # 2013 family interview number
+
+# ----------------------------------------------------------------
+# Person number for each family. If the family has one person only, then that family will
+# have family_member_2013 = 1. If there are multiple people in the family (e.g. n>2 people),
+# that family will have person 1, person 2, ..., person n.
+
+names(df)[names(df) == "ER34202"] <- "person_num_2013"  # 2013 sequence number
+# 1-20 means individuals in family at time of 2013 interview
+
+# ----------------------------------------------------------------
+# Highest grade/year of school the respondent completed in 2013 survey
+# 1-12 means first to twelfth grade, 13 means less than one yr of college,
+# 14 means one yr of college, 15 means 2 yrs of college, ..., 19 means college graduate,
+# 20 means post-graduate work, 98 means don't know, 99 means NA/refused, 0 means inap
+
+names(df)[names(df) == "ER34219"] <- "educ_2013"
+
+df$educ_2013[df$educ_2013 == 98] <- NA # recode don't know (98) to NA
+df$educ_2013[df$educ_2013 == 99] <- NA # recode refused (99) to NA
+df$educ_2013[df$educ_2013 == 0] <- NA # recode inapplicable (0) to NA
+
+# ----------------------------------------------------------------
+# Years of education completed in 2013 survey
+
+names(df)[names(df) == "ER34230"] <- "yrs_educ_2013"
+# 1-17 means highest grade or year of school completed, 98 means don't know, 99 NA,
+# 0 means inapplicable
+
+df$yrs_educ_2013[df$yrs_educ_2013 == 98] <- NA # recode don't know (98) to NA
+df$yrs_educ_2013[df$yrs_educ_2013 == 99] <- NA # recode refused (99) to NA
+df$yrs_educ_2013[df$yrs_educ_2013 == 0] <- NA  # recode inapplicable (0) to NA
+
+# ----------------------------------------------------------------
+# Total labour income of this OFUM in 2012
+names(df)[names(df) == "ER34251A"] <- "OFUM_total_labour_income"
+
+df$OFUM_total_labour_income[df$OFUM_total_labour_income == 0] <- NA  # recode inapplicable (0) to NA
+
+# ----------------------------------------------------------------
+# Total taxable income of this OFUM in 2012
+
+names(df)[names(df) == "ER34251D"] <- "OFUM_total_taxable_income"
+# 0 means inapplicable
+
+df$OFUM_total_taxable_income[df$OFUM_total_taxable_income == 0] <- NA  # recode inapplicable (0) to NA
+
+# ----------------------------------------------------------------
+# Employment status in 2013
+names(df)[names(df) == "ER34216"] <- "emp_stat_13"
+df$emp_stat_13[df$emp_stat_13 == 0] <- NA
+df$emp_stat_13[df$emp_stat_13 == 1] <- "working"
+df$emp_stat_13[df$emp_stat_13 == 2] <- "temp_laid_off"
+df$emp_stat_13[df$emp_stat_13 == 3] <- "unemployed"
+df$emp_stat_13[df$emp_stat_13 == 4] <- "retired"
+df$emp_stat_13[df$emp_stat_13 == 5] <- "perm_disabled"
+df$emp_stat_13[df$emp_stat_13 == 6] <- "keeping_house"
+df$emp_stat_13[df$emp_stat_13 == 7] <- "student"
+df$emp_stat_13[df$emp_stat_13 == 8] <- "other"
+df$emp_stat_13[df$emp_stat_13 == 9] <- "refused"
+
+# ----------------------------------------------------------------
+
+###### Filter data
+
+# keep observations for which we know whether the respondent's parents separated
+df = filter(df, parents_sep_ind==1 | df$parents_sep_ind==0)
+
+# filter out observations with NAs in age_parents_1st_sep
+df = df %>% drop_na(age_parents_1st_sep)
+
+# filter out observations with NAs in yrs_educ_2013
+df = df %>% drop_na(yrs_educ_2013)
 
 # Histogram of people with parents separated
 hist(df$yrs_educ_2013[df$parents_sep_ind==1], freq=FALSE)
 
 # Histogram of people with parents who did not separate
-hist(df$yrs_educ_2013[df$parents_sep_ind==5], freq=FALSE)
+hist(df$yrs_educ_2013[df$parents_sep_ind==0], freq=FALSE)
 
 # People with parents who separated tend of have lower years of education
 
+#names(df)[names(df) == "ER34020"] <- "yrs_educ_09" # years of education in 2009 survey
+#names(df)[names(df) == "ER34119"] <- "yrs_educ_11" # years of education in 2011 survey
+
+# ----------------------------------------------------------------
+# Overlay histogram of yrs_educ_2013 for respondents whose parents separated
+# and respondents whose parents did not separate
+# THIS SECTION IS IN PROGRESS
+carrots <- data.frame(df$yrs_educ_2013)
+cukes <- data.frame(length = rnorm(50000, 7, 2.5))
+
+# Now, combine your two dataframes into one.  
+# First make a new column in each that will be 
+# a variable to identify where they came from later.
+carrots$veg <- 'carrot'
+cukes$veg <- 'cuke'
+
+# and combine into your new data frame vegLengths
+vegLengths <- rbind(carrots, cukes)
+
+ggplot(vegLengths, aes(length, fill = veg)) + geom_density(alpha = 0.2)
+# ----------------------------------------------------------------
+
 # DEMOGRAPHICS -----------------------------------------
-names(df)[names(df) == "CS14V4"] <- "Sex"
-df$Sex[df$Sex == 1] <- "M" # Male
-df$Sex[df$Sex == 2] <- "F" # Female
-
-
-# Rename variables
-names(df)[names(df) == "CS14V17"] <- "parents_sep_ind"
-# 1 means parents separated, 5 means they did not separate, 
-# 9 means NA/not answered, 0 means inappliable
-
-names(df)[names(df) == "CS14V18"] <- "age_parents_1st_sep"
-# 0 means parents did not separate, 99 means inapplicable
-
-names(df)[names(df) == "ER34201"] <- "family_num_2013" # 2013 family interview number
-
-names(df)[names(df) == "ER34202"] <- "family_member_2013"  # 2013 sequence number
-# 1-20 means individuals in family at time of 2013 interview
-
-names(df)[names(df) == "ER34202"] <- "age_13"  # age in 2013
-
-names(df)[names(df) == "ER34216"] <- "emp_stat_13"  # employment status in 2013
-df$emp_stat_13[emp_stat_13 = 1] <- "working"
-df$emp_stat_13[emp_stat_13 = 2] <- "temp_laid_off"
-df$emp_stat_13[emp_stat_13 = 3] <- "unemployed"
-df$emp_stat_13[emp_stat_13 = 4] <- "retired"
-df$emp_stat_13[emp_stat_13 = 5] <- "perm_disabled"
-df$emp_stat_13[emp_stat_13 = 6] <- "keeping_house"
-df$emp_stat_13[emp_stat_13 = 7] <- "student"
-df$emp_stat_13[emp_stat_13 = 8] <- "other"
-df$emp_stat_13[emp_stat_13 == 9] <- "refused"
-
-
-names(df)[names(df) == "ER34251D"] <- "OFUM_total_taxable_income"
-# 0 means inapplicable
-
-names(df)[names(df) == "ER34202"] <- "OFUM_total_taxable_income"
-
-
-names(df)[names(df) == "ER34020"] <- "yrs_educ_09" # years of education in 2009 survey
-names(df)[names(df) == "ER34119"] <- "yrs_educ_11" # years of education in 2011 survey
-names(df)[names(df) == "ER34230"] <- "yrs_educ_2013" # years of education in 2013 survey
-# 1-17 means highest grade or year of school completed
-# 98 means don't know
-# 99 NA
-# 0 means inapplicable
-
-names(df)[names(df) == "ER34219"] <- "highest_grade" # highest year of school completed in 2013 survey
 
 # Keep rows with divorce (separation) data
 df_sep = df[df$parents_sep_ind %in% c(1,5),]
