@@ -1,0 +1,191 @@
+---
+title: "ECO1400 Term Paper"
+author: "Matthew Tang"
+date: "2022-12-01"
+output: pdf_document
+---
+
+Install and load required R packages
+```{r, message=FALSE}
+library(pder) # data
+library(plm)  # function: plm
+library(stargazer)
+library(dplyr)
+```
+
+Data was cleaned in Python. Import cleaned data into R.
+```{r}
+# read data
+cfps = read.csv("C:/Users/Matthew/Documents/ECO1400 - Econometrics/Paper/fulldata20162018.csv")
+
+# drop variable X (remnant from Python data cleaning)
+cfps = subset(cfps, select = -X )
+
+# recode variables
+cfps$cid[cfps$cid == -9] <- NA # -9: missing
+cfps$urban[cfps$urban == -9] <- NA # -9: missing, 1: urban, 0: rural
+cfps$urban_m[cfps$urban_m == -9] <- NA # -9: missing, 1: urban, 0: rural
+cfps$urban_f[cfps$urban_f == -9] <- NA # -9: missing, 1: urban, 0: rural
+cfps$age[cfps$age == -1] <- NA # -1: unknown
+cfps$b_feed_mon[cfps$b_feed_mon == -1] <- NA # -1: unknown
+cfps$b_feed_mon[cfps$b_feed_mon == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS NEVER BEEN BREASTFED)
+
+cfps$board_school[cfps$board_school == -1] <- NA # -1: unknown
+cfps$board_school[cfps$board_school == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS NOT OLD ENOUGH FOR BOARDING SCHOOL)
+
+cfps$verbal[cfps$verbal == -1] <- NA # -1: unknown
+cfps$verbal[cfps$verbal == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS CHILD NOT OLD ENOUGH FOR GRADES)
+
+cfps$math[cfps$math == -1] <- NA # -1: unknown
+cfps$math[cfps$math == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS CHILD NOT OLD ENOUGH FOR GRADES)
+
+cfps$school_tut_hrs[cfps$school_tut_hrs == -1] <- NA # -1: unknown
+cfps$school_tut_hrs[cfps$school_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$comp_tut_hrs[cfps$comp_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -1] <- NA # -1: unknown
+cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$int_tut_hrs[cfps$int_tut_hrs == -1] <- NA # -1: unknown
+cfps$int_tut_hrs[cfps$int_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -1] <- NA # -1: unknown
+cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$other_tut_hrs[cfps$other_tut_hrs == -1] <- NA # -1: unknown
+cfps$other_tut_hrs[cfps$other_tut_hrs == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs1[cfps$fam_member_tut_hrs1 == -1] <- NA # -1: unknown
+cfps$fam_member_tut_hrs1[cfps$fam_member_tut_hrs1 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs2[cfps$fam_member_tut_hrs2 == -1] <- NA # -1: unknown
+cfps$fam_member_tut_hrs2[cfps$fam_member_tut_hrs2 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs3[cfps$fam_member_tut_hrs3 == -1] <- NA # -1: unknown
+cfps$fam_member_tut_hrs3[cfps$fam_member_tut_hrs3 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs4[cfps$fam_member_tut_hrs4 == -1] <- NA # -1: unknown
+cfps$fam_member_tut_hrs4[cfps$fam_member_tut_hrs4 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs5[cfps$fam_member_tut_hrs5 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs6[cfps$fam_member_tut_hrs6 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs7[cfps$fam_member_tut_hrs7 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs8[cfps$fam_member_tut_hrs8 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs9[cfps$fam_member_tut_hrs9 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs10[cfps$fam_member_tut_hrs10 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs11[cfps$fam_member_tut_hrs11 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs12[cfps$fam_member_tut_hrs12 == -8] <- 0  # -8: not applicable
+
+cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -1] <- NA # -1: unknown
+cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -8] <- 0  # -8: not applicable
+
+cfps$verbal[cfps$verbal == 1] <- 4 # 1: excellent
+cfps$verbal[cfps$verbal == 2] <- 3 # 2: good
+cfps$verbal[cfps$verbal == 3] <- 2 # 3: average
+cfps$verbal[cfps$verbal == 4] <- 1 # 4: poor
+
+cfps$math[cfps$math == 1] <- 4 # 1: excellent
+cfps$math[cfps$math == 2] <- 3 # 2: good
+cfps$math[cfps$math == 3] <- 2 # 3: average
+cfps$math[cfps$math == 4] <- 1 # 4: poor
+
+cfps$marital_f[cfps$marital_f == 1] <- "never married" 
+cfps$marital_f[cfps$marital_f == 2] <- "married" 
+cfps$marital_f[cfps$marital_f == 3] <- "cohabitation" 
+cfps$marital_f[cfps$marital_f == 4] <- "divorced" 
+
+cfps$marital_m[cfps$marital_m == -1] <- "unknown" 
+cfps$marital_m[cfps$marital_m == 1] <- "never married" 
+cfps$marital_m[cfps$marital_m == 2] <- "married" 
+cfps$marital_m[cfps$marital_m == 3] <- "cohabitation"
+cfps$marital_m[cfps$marital_m == 4] <- "divorced"
+
+cfps$year_divorced_m[cfps$year_divorced_m == -8] <- NA
+
+cfps$year_divorced_f[cfps$year_divorced_f == -1] <- NA 
+cfps$year_divorced_f[cfps$year_divorced_f == -8] <- NA 
+
+
+
+# -------------------------------------------------------------------------
+
+# Define new variables
+cfps$total_paid_tut_hrs = cfps$school_tut_hrs + cfps$comp_tut_hrs + cfps$hobby_tut_hrs
+                     + cfps$int_tut_hrs + cfps$parent_child_tut_hrs + cfps$other_tut_hrs
+
+cfps$total_fam_tut_hrs = cfps$fam_member_tut_hrs1 + cfps$fam_member_tut_hrs2 + 
+  cfps$fam_member_tut_hrs3  + cfps$fam_member_tut_hrs4  + cfps$fam_member_tut_hrs5 + 
+  cfps$fam_member_tut_hrs6  + cfps$fam_member_tut_hrs7  + cfps$fam_member_tut_hrs8 + 
+  cfps$fam_member_tut_hrs9  + cfps$fam_member_tut_hrs10 + cfps$fam_member_tut_hrs11 + 
+  cfps$fam_member_tut_hrs12 + cfps$fam_member_tut_hrs31
+
+cfps$total_tut_hrs = cfps$total_paid_tut_hrs + cfps$total_fam_tut_hrs
+
+
+cfps_no_verbal <- cfps[is.na(cfps$verbal),]
+cfps_verbal <- cfps[!is.na(cfps$verbal),]
+cfps_verbal_math <- cfps_verbal[!is.na(cfps_verbal$math),]
+
+cfps$divorced_dummy = 
+```
+
+
+OLS (The indicator variable "sample" selects the subset of variables used by Acemoglu et al, 2008)
+```{r}
+ols <- plm(democracy ~ lag(democracy) + lag(income),
+           data=cfps, index=c("country", "year"),
+           model="pooling", effect="twoways")
+coef(summary(ols))[1:2,]
+```
+
+
+Fixed Effects
+```{r}
+FE <- plm(democracy ~ lag(democracy) + lag(income),
+           data=cfps, index=c("country", "year"),
+           model="within", effect="twoways")
+coef(summary(FE))[1:2,]
+```
+Note the change in the democracy coefficient and lack of significance of income.
+
+Arellano-Bond one-step estimator.
+The formula has three parts: the first contains the explanatory variables and the second the “gmm” instruments (history of lags of y). The option effect="twoways" adds year dummy variables into the model. The lag subscript on the "gmm" instrument, 2:99, is longer than the time dimension of the data, but any extra length of the vector past actual data is simply ignored by R. This is useful especially for unbalanced panels with different histories for different individuals.
+```{r}
+diff1 <- pgmm(democracy ~ lag(democracy) + lag(income) | lag(democracy, 2:99),
+              data=cfps, index=c("country", "year"),
+              model="onestep", effect="twoways")
+coef(summary(diff1))[1:2,]
+```
+
+Arellano-Bond two-step estimator
+```{r}
+diff2 <- pgmm(democracy ~ lag(democracy) + lag(income) | lag(democracy, 2:99),
+              data=cfps, index=c("country", "year"),
+              model="twosteps", effect="twoways")
+coef(summary(diff2))[1:2,]
+```
+
+System GMM estimator. The change from Arellano-Bond is that the argument "transformation", which defaults to "d" for difference, must be set to "ld" (for level and difference).
+```{r}
+sys2 <- pgmm(democracy ~ lag(democracy) + lag(income) |
+             lag(democracy, 2:99),
+             data=cfps, index=c("country", "year"),
+             model="twosteps", effect="twoways",
+             transformation = "ld")
+coef(summary(sys2))[1:2,]
+```
+
+Output results in LaTeX in table format
+```{r warning=FALSE}
+stargazer(diff1, diff2, sys2, title="Dynamic Panel Data", 
+          column.labels=c("AB one step", "AB two steps", "System GMM"), 
+          no.space = TRUE, omit.stat=c("f", "ser"))
+```
