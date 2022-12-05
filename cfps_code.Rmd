@@ -13,15 +13,25 @@ library(stargazer)
 library(dplyr)
 ```
 
-Data was cleaned in Python. Import cleaned data into R.
+Cursory data cleaning was done in Python. Import data into R.
 ```{r}
 # read data
-cfps = read.csv("C:/Users/Matthew/Documents/ECO1400 - Econometrics/Paper/fulldata20162018.csv")
+#cfps = read.csv("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/fulldata20162018.csv")
+cfps = read.csv("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/fulldata.csv")
+
+
+# remove rows where a child is observed only once
+cfps <- cfps %>%
+                 group_by(pid) %>%
+                 filter(n()>1)
 
 # drop variable X (remnant from Python data cleaning)
-cfps = subset(cfps, select = -X )
+#cfps = subset(cfps, select = -X )
+
+# -------------------------------------------------------------------------
 
 # recode variables
+
 cfps$cid[cfps$cid == -9] <- NA # -9: missing
 cfps$urban[cfps$urban == -9] <- NA # -9: missing, 1: urban, 0: rural
 cfps$urban_m[cfps$urban_m == -9] <- NA # -9: missing, 1: urban, 0: rural
@@ -68,6 +78,7 @@ cfps$fam_member_tut_hrs3[cfps$fam_member_tut_hrs3 == -8] <- 0  # -8: not applica
 cfps$fam_member_tut_hrs4[cfps$fam_member_tut_hrs4 == -1] <- NA # -1: unknown
 cfps$fam_member_tut_hrs4[cfps$fam_member_tut_hrs4 == -8] <- 0  # -8: not applicable
 
+cfps$fam_member_tut_hrs5[cfps$fam_member_tut_hrs5 == -1] <- NA # -1: unknown
 cfps$fam_member_tut_hrs5[cfps$fam_member_tut_hrs5 == -8] <- 0  # -8: not applicable
 
 cfps$fam_member_tut_hrs6[cfps$fam_member_tut_hrs6 == -8] <- 0  # -8: not applicable
@@ -87,15 +98,17 @@ cfps$fam_member_tut_hrs12[cfps$fam_member_tut_hrs12 == -8] <- 0  # -8: not appli
 cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -1] <- NA # -1: unknown
 cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -8] <- 0  # -8: not applicable
 
-cfps$verbal[cfps$verbal == 1] <- 4 # 1: excellent
-cfps$verbal[cfps$verbal == 2] <- 3 # 2: good
-cfps$verbal[cfps$verbal == 3] <- 2 # 3: average
-cfps$verbal[cfps$verbal == 4] <- 1 # 4: poor
+cfps$verbal[cfps$verbal == 1] <- 4   # 1: excellent
+cfps$verbal[cfps$verbal == 2] <- 3   # 2: good
+cfps$verbal[cfps$verbal == 3] <- 2   # 3: average
+cfps$verbal[cfps$verbal == 4] <- 1   # 4: poor
+cfps$verbal[cfps$verbal == -2] <- NA # -2: NA
 
-cfps$math[cfps$math == 1] <- 4 # 1: excellent
-cfps$math[cfps$math == 2] <- 3 # 2: good
-cfps$math[cfps$math == 3] <- 2 # 3: average
-cfps$math[cfps$math == 4] <- 1 # 4: poor
+cfps$math[cfps$math == 1] <- 4   # 1: excellent
+cfps$math[cfps$math == 2] <- 3   # 2: good
+cfps$math[cfps$math == 3] <- 2   # 3: average
+cfps$math[cfps$math == 4] <- 1   # 4: poor
+cfps$math[cfps$math == -2] <- NA # -2: NA
 
 cfps$marital_f[cfps$marital_f == 1] <- "never married" 
 cfps$marital_f[cfps$marital_f == 2] <- "married" 
@@ -113,7 +126,15 @@ cfps$year_divorced_m[cfps$year_divorced_m == -8] <- NA
 cfps$year_divorced_f[cfps$year_divorced_f == -1] <- NA 
 cfps$year_divorced_f[cfps$year_divorced_f == -8] <- NA 
 
+cfps$salary_f[cfps$salary_f == -9] <- NA # -1: unknown
+cfps$salary_f[cfps$salary_f == -8] <- NA # -2: refuse
+cfps$salary_f[cfps$salary_f == -2] <- NA # -8: not applicable
+cfps$salary_f[cfps$salary_f == -1] <- NA # -9: missing
 
+cfps$salary_m[cfps$salary_m == -9] <- NA # -1: unknown
+cfps$salary_m[cfps$salary_m == -8] <- NA # -2: refuse
+cfps$salary_m[cfps$salary_m == -2] <- NA # -8: not applicable
+cfps$salary_m[cfps$salary_m == -1] <- NA # -9: missing
 
 # -------------------------------------------------------------------------
 
@@ -122,28 +143,95 @@ cfps$total_paid_tut_hrs = cfps$school_tut_hrs + cfps$comp_tut_hrs + cfps$hobby_t
                      + cfps$int_tut_hrs + cfps$parent_child_tut_hrs + cfps$other_tut_hrs
 
 cfps$total_fam_tut_hrs = cfps$fam_member_tut_hrs1 + cfps$fam_member_tut_hrs2 + 
-  cfps$fam_member_tut_hrs3  + cfps$fam_member_tut_hrs4  + cfps$fam_member_tut_hrs5 + 
-  cfps$fam_member_tut_hrs6  + cfps$fam_member_tut_hrs7  + cfps$fam_member_tut_hrs8 + 
-  cfps$fam_member_tut_hrs9  + cfps$fam_member_tut_hrs10 + cfps$fam_member_tut_hrs11 + 
-  cfps$fam_member_tut_hrs12 + cfps$fam_member_tut_hrs31
-
-cfps$total_tut_hrs = cfps$total_paid_tut_hrs + cfps$total_fam_tut_hrs
+  cfps$fam_member_tut_hrs3  + cfps$fam_member_tut_hrs4  + cfps$fam_member_tut_hrs5 
 
 
-cfps_no_verbal <- cfps[is.na(cfps$verbal),]
-cfps_verbal <- cfps[!is.na(cfps$verbal),]
-cfps_verbal_math <- cfps_verbal[!is.na(cfps_verbal$math),]
+# create dummy vars that identify whether parent is divorced (1) or otherwise (0)
+cfps$divorced_dummy_f = ifelse(cfps$marital_f == "divorced" 
+                               & (!is.na(cfps$marital_f)), 
+                               1, 0)
 
-cfps$divorced_dummy = 
+cfps$divorced_dummy_m = ifelse(cfps$marital_m == "divorced" 
+                               & (!is.na(cfps$marital_m)),
+                               1, 0)
+
+# create dummy var that identifies if child has at least 1 divorced parent
+cfps$divorced_dummy = ifelse(cfps$marital_m == "divorced" | cfps$marital_f == "divorced", 1, 0)
+
+# total salary of both parents combined
+cfps$total_salary = cfps$salary_f  + cfps$salary_m
+
+# create dataset with only complete observations
+#cfps_no_verbal <- cfps[is.na(cfps$verbal),]
+cfps_final <- cfps[!is.na(cfps$verbal),]                             # remove rows with NAs in verbal
+cfps_final <- cfps_final[!is.na(cfps_final$math),]                   # remove rows with NAs in math
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_f),]       # remove rows with NAs in divorced_dummy_f
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_m),]       # remove rows with NAs in divorced_dummy_m
+cfps_final <- cfps_final[!is.na(cfps_final$salary_f),]               # remove rows with NAs in salary_f
+cfps_final <- cfps_final[!is.na(cfps_final$salary_m),]               # remove rows with NAs in salary_m
+cfps_final <- cfps_final[!is.na(cfps_final$urban),]                  # remove rows with NAs in urban
+cfps_final <- cfps_final[!is.na(cfps_final$urban_f),]                # remove rows with NAs in urban_f
+cfps_final <- cfps_final[!is.na(cfps_final$urban_m),]                # remove rows with NAs in urban_m
+cfps_final <- cfps_final[!is.na(cfps_final$board_school),]           # remove rows with NAs in board_school
+cfps_final <- cfps_final[!is.na(cfps_final$total_fam_tut_hrs),]      # remove rows with NAs in total_fam_tut_hrs
 ```
 
 
-OLS (The indicator variable "sample" selects the subset of variables used by Acemoglu et al, 2008)
+
 ```{r}
-ols <- plm(democracy ~ lag(democracy) + lag(income),
-           data=cfps, index=c("country", "year"),
+# Use the following covariates: divorce dummy, employment status, urban dummy, 
+# CCP, parent education, 
+
+ols1 = lm(math ~ salary_m + salary_f + urban + urban_m + urban_f
+           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+           data=cfps_final)
+
+ols2 = plm(math ~ salary_m + salary_f + urban + urban_m + urban_f
+           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+           data=cfps_final, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
-coef(summary(ols))[1:2,]
+
+FE_no_lag <- plm(math ~ salary_m + salary_f + urban + urban_m + urban_f
+           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+          data = cfps_final, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_lag <- plm(math ~ lag(math) + salary_m + salary_f + urban + urban_m + urban_f
+           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+          data = cfps_final, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+test1 = lm(math ~ lag(math) + salary_m + salary_f + urban + urban_m + urban_f
+           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+          data = cfps_final)
+
+
+# use simplified variables (total salary instead of salary_m, salary_f;
+#                           divorced_dummy instead of divorced_dummy_m, divorced_dummy_f)
+
+ols1_red = lm(math ~ total_salary + urban + urban_m + urban_f
+           + board_school + divorced_dummy + total_fam_tut_hrs,
+           data=cfps_final)
+
+ols2_red = plm(math ~ total_salary + urban + urban_m + urban_f
+           + board_school + divorced_dummy + total_fam_tut_hrs,
+           data=cfps_final, index=c("pid", "intyear"),
+           model="pooling", effect="time")
+
+FE_no_lag_red <- plm(math ~ total_salary + urban
+           + board_school + divorced_dummy + total_fam_tut_hrs,
+          data = cfps_final, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_no_lag_red <- plm(math ~ lag(math) + total_salary + urban
+           + board_school + divorced_dummy + total_fam_tut_hrs,
+          data = cfps_final, index=c("pid", "intyear"),
+           model="within", effect="time")
+
+test2 = lm(math ~ lag(math) + total_salary + urban
+           + board_school + divorced_dummy + total_fam_tut_hrs,
+          data = cfps_final)
+
 ```
 
 
