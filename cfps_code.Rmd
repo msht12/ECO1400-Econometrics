@@ -11,27 +11,64 @@ library(pder) # data
 library(plm)  # function: plm
 library(stargazer)
 library(dplyr)
+library(survival) # function: clogit
+library(aod)
+library(xtable)
+library(latex2exp)
 ```
 
 Cursory data cleaning was done in Python. Import data into R.
 ```{r}
+### ------- Data cleaning ------- 
+
 # read data
 #cfps = read.csv("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/fulldata20162018.csv")
 cfps = read.csv("C:/Users/mattt/OneDrive/Documents/GitHub/ECO1400-Econometrics/fulldata.csv")
 
-
-# remove rows where a child is observed only once
-cfps <- cfps %>%
-                 group_by(pid) %>%
-                 filter(n()>1)
-
 # drop variable X (remnant from Python data cleaning)
-#cfps = subset(cfps, select = -X )
+cfps = subset(cfps, select = -X )
 
-# -------------------------------------------------------------------------
+# --- Note ---
+# In some years of the survey, the following questions weren't asked. When working with
+# the full dataset, we discard variables that weren't consistently observed in all
+# years. Since we discarded these variables, they no longer need to be recoded.
+
+#cfps$school_tut_hrs[cfps$school_tut_hrs == -1] <- NA # -1: unknown
+#cfps$school_tut_hrs[cfps$school_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$comp_tut_hrs[cfps$comp_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -1] <- NA # -1: unknown
+#cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$int_tut_hrs[cfps$int_tut_hrs == -1] <- NA # -1: unknown
+#cfps$int_tut_hrs[cfps$int_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -1] <- NA # -1: unknown
+#cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$other_tut_hrs[cfps$other_tut_hrs == -1] <- NA # -1: unknown
+#cfps$other_tut_hrs[cfps$other_tut_hrs == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs6[cfps$fam_member_tut_hrs6 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs7[cfps$fam_member_tut_hrs7 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs8[cfps$fam_member_tut_hrs8 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs9[cfps$fam_member_tut_hrs9 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs10[cfps$fam_member_tut_hrs10 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs11[cfps$fam_member_tut_hrs11 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs12[cfps$fam_member_tut_hrs12 == -8] <- 0  # -8: not applicable
+
+#cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -1] <- NA # -1: unknown
+#cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -8] <- 0  # -8: not applicable
+# --- End Note ---
 
 # recode variables
-
 cfps$cid[cfps$cid == -9] <- NA # -9: missing
 cfps$urban[cfps$urban == -9] <- NA # -9: missing, 1: urban, 0: rural
 cfps$urban_m[cfps$urban_m == -9] <- NA # -9: missing, 1: urban, 0: rural
@@ -39,6 +76,9 @@ cfps$urban_f[cfps$urban_f == -9] <- NA # -9: missing, 1: urban, 0: rural
 cfps$age[cfps$age == -1] <- NA # -1: unknown
 cfps$b_feed_mon[cfps$b_feed_mon == -1] <- NA # -1: unknown
 cfps$b_feed_mon[cfps$b_feed_mon == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS NEVER BEEN BREASTFED)
+
+cfps$salary_f = cfps$salary_f/1000
+cfps$salary_m = cfps$salary_m/1000
 
 cfps$board_school[cfps$board_school == -1] <- NA # -1: unknown
 cfps$board_school[cfps$board_school == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS NOT OLD ENOUGH FOR BOARDING SCHOOL)
@@ -49,22 +89,6 @@ cfps$verbal[cfps$verbal == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEAN
 cfps$math[cfps$math == -1] <- NA # -1: unknown
 cfps$math[cfps$math == -8] <- NA # -8: not applicable (CHECK IF NOT APP MEANS CHILD NOT OLD ENOUGH FOR GRADES)
 
-cfps$school_tut_hrs[cfps$school_tut_hrs == -1] <- NA # -1: unknown
-cfps$school_tut_hrs[cfps$school_tut_hrs == -8] <- 0  # -8: not applicable
-
-cfps$comp_tut_hrs[cfps$comp_tut_hrs == -8] <- 0  # -8: not applicable
-
-cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -1] <- NA # -1: unknown
-cfps$hobby_tut_hrs[cfps$hobby_tut_hrs == -8] <- 0  # -8: not applicable
-
-cfps$int_tut_hrs[cfps$int_tut_hrs == -1] <- NA # -1: unknown
-cfps$int_tut_hrs[cfps$int_tut_hrs == -8] <- 0  # -8: not applicable
-
-cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -1] <- NA # -1: unknown
-cfps$parent_child_tut_hrs[cfps$parent_child_tut_hrs == -8] <- 0  # -8: not applicable
-
-cfps$other_tut_hrs[cfps$other_tut_hrs == -1] <- NA # -1: unknown
-cfps$other_tut_hrs[cfps$other_tut_hrs == -8] <- 0  # -8: not applicable
 
 cfps$fam_member_tut_hrs1[cfps$fam_member_tut_hrs1 == -1] <- NA # -1: unknown
 cfps$fam_member_tut_hrs1[cfps$fam_member_tut_hrs1 == -8] <- 0  # -8: not applicable
@@ -81,34 +105,17 @@ cfps$fam_member_tut_hrs4[cfps$fam_member_tut_hrs4 == -8] <- 0  # -8: not applica
 cfps$fam_member_tut_hrs5[cfps$fam_member_tut_hrs5 == -1] <- NA # -1: unknown
 cfps$fam_member_tut_hrs5[cfps$fam_member_tut_hrs5 == -8] <- 0  # -8: not applicable
 
-cfps$fam_member_tut_hrs6[cfps$fam_member_tut_hrs6 == -8] <- 0  # -8: not applicable
+cfps$verbal_adj[cfps$verbal == 1] <- 4   # 1: excellent
+cfps$verbal_adj[cfps$verbal == 2] <- 3   # 2: good
+cfps$verbal_adj[cfps$verbal == 3] <- 2   # 3: average
+cfps$verbal_adj[cfps$verbal == 4] <- 1   # 4: poor
+cfps$verbal_adj[cfps$verbal == -2] <- NA # -2: NA
 
-cfps$fam_member_tut_hrs7[cfps$fam_member_tut_hrs7 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs8[cfps$fam_member_tut_hrs8 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs9[cfps$fam_member_tut_hrs9 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs10[cfps$fam_member_tut_hrs10 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs11[cfps$fam_member_tut_hrs11 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs12[cfps$fam_member_tut_hrs12 == -8] <- 0  # -8: not applicable
-
-cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -1] <- NA # -1: unknown
-cfps$fam_member_tut_hrs31[cfps$fam_member_tut_hrs31 == -8] <- 0  # -8: not applicable
-
-cfps$verbal[cfps$verbal == 1] <- 4   # 1: excellent
-cfps$verbal[cfps$verbal == 2] <- 3   # 2: good
-cfps$verbal[cfps$verbal == 3] <- 2   # 3: average
-cfps$verbal[cfps$verbal == 4] <- 1   # 4: poor
-cfps$verbal[cfps$verbal == -2] <- NA # -2: NA
-
-cfps$math[cfps$math == 1] <- 4   # 1: excellent
-cfps$math[cfps$math == 2] <- 3   # 2: good
-cfps$math[cfps$math == 3] <- 2   # 3: average
-cfps$math[cfps$math == 4] <- 1   # 4: poor
-cfps$math[cfps$math == -2] <- NA # -2: NA
+cfps$math_adj[cfps$math == 1] <- 4   # 1: excellent
+cfps$math_adj[cfps$math == 2] <- 3   # 2: good
+cfps$math_adj[cfps$math == 3] <- 2   # 3: average
+cfps$math_adj[cfps$math == 4] <- 1   # 4: poor
+cfps$math_adj[cfps$math == -2] <- NA # -2: NA
 
 cfps$marital_f[cfps$marital_f == 1] <- "never married" 
 cfps$marital_f[cfps$marital_f == 2] <- "married" 
@@ -139,141 +146,436 @@ cfps$salary_m[cfps$salary_m == -1] <- NA # -9: missing
 # -------------------------------------------------------------------------
 
 # Define new variables
-cfps$total_paid_tut_hrs = cfps$school_tut_hrs + cfps$comp_tut_hrs + cfps$hobby_tut_hrs
-                     + cfps$int_tut_hrs + cfps$parent_child_tut_hrs + cfps$other_tut_hrs
+
+# --- Note ---
+# Breakdown of paid tutoring hours was not observed in all years of the survey. i.e. 
+# school_tut_hrs, comp_tut_hrs, etc. weren't observed. So we can't sum them to compute
+# total paid tutoring hours.
+
+#cfps$total_paid_tut_hrs = cfps$school_tut_hrs + cfps$comp_tut_hrs + cfps$hobby_tut_hrs
+#                     + cfps$int_tut_hrs + cfps$parent_child_tut_hrs + cfps$other_tut_hrs
+
+# --- End Note ---
 
 cfps$total_fam_tut_hrs = cfps$fam_member_tut_hrs1 + cfps$fam_member_tut_hrs2 + 
   cfps$fam_member_tut_hrs3  + cfps$fam_member_tut_hrs4  + cfps$fam_member_tut_hrs5 
 
 
-# create dummy vars that identify whether parent is divorced (1) or otherwise (0)
+# create dummy variables to identify whether parent is divorced (1) or otherwise (0)
+# father
 cfps$divorced_dummy_f = ifelse(cfps$marital_f == "divorced" 
-                               & (!is.na(cfps$marital_f)), 
-                               1, 0)
+                               & (!is.na(cfps$marital_f)), 1, 0)
 
+# mother
 cfps$divorced_dummy_m = ifelse(cfps$marital_m == "divorced" 
-                               & (!is.na(cfps$marital_m)),
-                               1, 0)
+                               & (!is.na(cfps$marital_m)), 1, 0)
 
 # create dummy var that identifies if child has at least 1 divorced parent
 cfps$divorced_dummy = ifelse(cfps$marital_m == "divorced" | cfps$marital_f == "divorced", 1, 0)
+
+# create dummy var that identifies if child has at least 1 divorced parent
+cfps$ccp_parent = ifelse(cfps$ccp_m == 1 | cfps$ccp_f == 1, 1, 0)
+
 
 # total salary of both parents combined
 cfps$total_salary = cfps$salary_f  + cfps$salary_m
 
 # create dataset with only complete observations
-#cfps_no_verbal <- cfps[is.na(cfps$verbal),]
 cfps_final <- cfps[!is.na(cfps$verbal),]                             # remove rows with NAs in verbal
 cfps_final <- cfps_final[!is.na(cfps_final$math),]                   # remove rows with NAs in math
 cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_f),]       # remove rows with NAs in divorced_dummy_f
 cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_m),]       # remove rows with NAs in divorced_dummy_m
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy),]         # remove rows with NAs in divorced_dummy
 cfps_final <- cfps_final[!is.na(cfps_final$salary_f),]               # remove rows with NAs in salary_f
 cfps_final <- cfps_final[!is.na(cfps_final$salary_m),]               # remove rows with NAs in salary_m
+cfps_final <- cfps_final[!is.na(cfps_final$educ_years_f),]           # remove rows with NAs in educ_years_f
+cfps_final <- cfps_final[!is.na(cfps_final$educ_years_m),]           # remove rows with NAs in educ_years_m
 cfps_final <- cfps_final[!is.na(cfps_final$urban),]                  # remove rows with NAs in urban
 cfps_final <- cfps_final[!is.na(cfps_final$urban_f),]                # remove rows with NAs in urban_f
 cfps_final <- cfps_final[!is.na(cfps_final$urban_m),]                # remove rows with NAs in urban_m
 cfps_final <- cfps_final[!is.na(cfps_final$board_school),]           # remove rows with NAs in board_school
 cfps_final <- cfps_final[!is.na(cfps_final$total_fam_tut_hrs),]      # remove rows with NAs in total_fam_tut_hrs
+#cfps_final <- cfps_final[!is.na(cfps_final$ccp_parent),]            # remove rows with NAs in ccp_parent
+
+# -----------------------------------------------------------------------------------------
+# Subset data into 2-CONSECUTIVE wave dataframes (e.g. 2010/2012, 2012/2014, ..., 2016/2018).
+# We want BALANCED panel data, so we want to keep children who are observed in BOTH years.
+
+# The first line of code filters dataframe cfps_final for observations where intyear match
+# the time period we're looking for (e.g. 2010 and 2012). Each child in the resulting 
+# dataframe is observed either once (2010 ONLY or 2012 ONLY) or twice (2010 AND 2012). The
+# second line of code filters once more so we only keep children that were observed in both
+# years. This is required to run panel estimation. If we only observe a child in one year,
+# panel methods won't work.
+
+# 2016/2018
+cfps_16to18 <- cfps_final[cfps_final$intyear == 2018 | cfps_final$intyear == 2016,]
+cfps_16to18 <- cfps_16to18 %>% group_by(pid) %>% filter(n()>1) 
+
+# 2014/2016
+cfps_14to16 <- cfps_final[cfps_final$intyear == 2016 | cfps_final$intyear == 2014,]
+cfps_14to16 <- cfps_14to16 %>% group_by(pid) %>% filter(n()>1)
+
+# 2012/2014
+cfps_12to14 <- cfps_final[cfps_final$intyear == 2014 | cfps_final$intyear == 2012,]
+cfps_12to14 <- cfps_12to14 %>% group_by(pid) %>% filter(n()>1)
+
+# 2010/2012
+cfps_10to12 <- cfps_final[cfps_final$intyear == 2012 | cfps_final$intyear == 2010,]
+cfps_10to12 <- cfps_10to12 %>% group_by(pid) %>% filter(n()>1)
+# -----------------------------------------------------------------------------------------
+
+# check how many divorced children are in each dataframe
+table(cfps_16to18$divorced_dummy, useNA="always")   # 14/2062 observations w/ divorced_dummy=1
+table(cfps_14to16$divorced_dummy, useNA="always")   # 1/1140 observations w/ divorced_dummy=1
+table(cfps_12to14$divorced_dummy, useNA="always")   # 10/2206 observations w/ divorced_dummy=1
+table(cfps_10to12$divorced_dummy, useNA="always")   # 7/3108 observations w/ divorced_dummy=1
+# 2016/2018 dataframe has most observations with divorced_dummy=1
+#rm(cfps_14to16); rm(cfps_12to14); rm(cfps_10to12)
+
+# Create LaTeX table to show how many observations have divorced_dummy=1 for each 
+# two consecutive year dataset.
+tab = data.frame(table(cfps_10to12$divorced_dummy, useNA="always"), 
+                 table(cfps_12to14$divorced_dummy, useNA="always"),
+                 table(cfps_14to16$divorced_dummy, useNA="always"),
+                 table(cfps_16to18$divorced_dummy, useNA="always"))
+tab = subset(tab, select = -c(Var1.1, Var1.2, Var1.3) )
+
+tab = tab %>% rename(Value = Var1, Data2010to2012 = Freq, Data2012to2014 = Freq.1, 
+               Data2014to2016 = Freq.2, Data2016to2018 = Freq.3)
+tab[3,2:5] = tab[1,2:5] + tab[2,2:5]
+
+tab <- xtable(tab, type = "latex")
+
+# -----------------------------------------------------------------------------------------
+# Subset data into 3-CONSECUTIVE wave dataframes (e.g. 2010/2012/2014, 2012/2014/2016, 2014/2016/2018)
+
+# 2014/2016/2018
+cfps_14to18 <- cfps_final[cfps_final$intyear == 2018 | cfps_final$intyear == 2016 | cfps_final$intyear == 2014,]
+cfps_14to18 <- cfps_14to18 %>% group_by(pid) %>% filter(n()>2)
+
+# 2012/2014/2016
+cfps_12to16 <- cfps_final[cfps_final$intyear == 2016 | cfps_final$intyear == 2014 | cfps_final$intyear == 2012,]
+cfps_12to16 <- cfps_12to16 %>% group_by(pid) %>% filter(n()>2)
+
+# 2010/2012/2014
+cfps_10to14 <- cfps_final[cfps_final$intyear == 2014 | cfps_final$intyear == 2012 | cfps_final$intyear == 2010,]
+cfps_10to14 <- cfps_10to14 %>% group_by(pid) %>% filter(n()>2)
+
+# check how many divorced children are in each dataframe
+table(cfps_14to18$divorced_dummy, useNA="always")
+table(cfps_12to16$divorced_dummy, useNA="always")
+table(cfps_10to14$divorced_dummy, useNA="always")
+# 14-18 dataframe has most divorced
+rm(cfps_12to16); rm(cfps_10to14)
+
+# Create LaTeX table to show how many observations have divorced_dummy=1 for each 
+# four consecutive year dataset.
+tab = data.frame(table(cfps_10to14$divorced_dummy, useNA="always"), 
+                 table(cfps_12to16$divorced_dummy, useNA="always"),
+                 table(cfps_14to18$divorced_dummy, useNA="always"))
+tab = subset(tab, select = -c(Var1.1, Var1.2) )
+
+tab = tab %>% rename(Value = Var1, Data2010to2014 = Freq, Data2012to2016 = Freq.1, 
+               Data2014to2018 = Freq.2)
+tab[3,2:4] = tab[1,2:4] + tab[2,2:4]
+tab[4,2:4] = 100*tab[2,2:4] / tab[3,2:4]
+
+tab <- xtable(tab, type = "latex")
+
+# -----------------------------------------------------------------------------------------
+
+# subset data into children who are observed in 2018 AND 2016 AND 2014 AND 2012
+cfps_12to18 <- cfps_final[cfps_final$intyear == 2018 | cfps_final$intyear == 2016 | cfps_final$intyear == 2014 | cfps_final$intyear == 2012,]
+cfps_12to18 <- cfps_12to18 %>% group_by(pid) %>% filter(n()>3)
+
+cfps_10to16 <- cfps_final[cfps_final$intyear == 2016 | cfps_final$intyear == 2014 | cfps_final$intyear == 2012 | cfps_final$intyear == 2010,]
+cfps_10to16 <- cfps_10to16 %>% group_by(pid) %>% filter(n()>3)
+
+# check how many divorced children are in each dataframe
+table(cfps_12to18$divorced_dummy, useNA="always")
+table(cfps_10to16$divorced_dummy, useNA="always")
+# 12-18 dataframe has most divorced
+rm(cfps_10to16)
+
+
+# -----------------------------------------------------------------------------------------
+
+# subset data into children who are observed in 2018 AND 2016 AND 2014 AND 2012 AND 2010
+cfps_10to18 <- cfps_final %>% group_by(pid) %>% filter(n()>4)
+
+
+# remove rows where a child is observed only once
+#cfps <- cfps %>% group_by(pid) %>% filter(n()>1)
+
+# -------------------------------------------------------------------------
+
+```
+
+```{r, include=FALSE}
+
+#library(data.table)
+
+#a <- data.table(cfps_final)
+
+#a <- a[divorced_dummy == 1,][, by=.(pid), .N]
 ```
 
 
-
 ```{r}
-# Use the following covariates: divorce dummy, employment status, urban dummy, 
-# CCP, parent education, 
+### ------- Regressions ------- 
 
-ols1 = lm(math ~ salary_m + salary_f + urban + urban_m + urban_f
-           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
-           data=cfps_final)
+# pooled regression with all observations ignoring panel structure
 
-ols2 = plm(math ~ salary_m + salary_f + urban + urban_m + urban_f
-           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
+reg_pooled = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_final, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-FE_no_lag <- plm(math ~ salary_m + salary_f + urban + urban_m + urban_f
-           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
-          data = cfps_final, index=c("pid", "intyear"),
-           model="within", effect="twoways")
+# regressions using 2-year windows
 
-FE_lag <- plm(math ~ lag(math) + salary_m + salary_f + urban + urban_m + urban_f
-           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
-          data = cfps_final, index=c("pid", "intyear"),
-           model="within", effect="twoways")
+reg_pooled_16to18 = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_16to18, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
 
-test1 = lm(math ~ lag(math) + salary_m + salary_f + urban + urban_m + urban_f
-           + board_school + divorced_dummy_f + divorced_dummy_m + total_fam_tut_hrs,
-          data = cfps_final)
+reg_pooled_14to16 = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_14to16, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
 
+reg_pooled_12to14 = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_12to14, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
 
-# use simplified variables (total salary instead of salary_m, salary_f;
-#                           divorced_dummy instead of divorced_dummy_m, divorced_dummy_f)
+reg_pooled_10to12 = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_10to12, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
 
-ols1_red = lm(math ~ total_salary + urban + urban_m + urban_f
-           + board_school + divorced_dummy + total_fam_tut_hrs,
-           data=cfps_final)
-
-ols2_red = plm(math ~ total_salary + urban + urban_m + urban_f
-           + board_school + divorced_dummy + total_fam_tut_hrs,
-           data=cfps_final, index=c("pid", "intyear"),
-           model="pooling", effect="time")
-
-FE_no_lag_red <- plm(math ~ total_salary + urban
-           + board_school + divorced_dummy + total_fam_tut_hrs,
-          data = cfps_final, index=c("pid", "intyear"),
-           model="within", effect="twoways")
-
-FE_no_lag_red <- plm(math ~ lag(math) + total_salary + urban
-           + board_school + divorced_dummy + total_fam_tut_hrs,
-          data = cfps_final, index=c("pid", "intyear"),
+FE_time_16to18 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_16to18, index=c("pid", "intyear"),
            model="within", effect="time")
 
-test2 = lm(math ~ lag(math) + total_salary + urban
-           + board_school + divorced_dummy + total_fam_tut_hrs,
-          data = cfps_final)
+FE_time_14to16 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_14to16, index=c("pid", "intyear"),
+           model="within", effect="time")
 
-```
+FE_time_12to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_12to14, index=c("pid", "intyear"),
+           model="within", effect="time")
 
+FE_time_10to12 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to12, index=c("pid", "intyear"),
+           model="within", effect="time")
 
-Fixed Effects
-```{r}
-FE <- plm(democracy ~ lag(democracy) + lag(income),
-           data=cfps, index=c("country", "year"),
+# store results in Stargazer table
+stargazer(reg_pooled, reg_pooled_16to18, reg_pooled_14to16, reg_pooled_12to14, 
+          reg_pooled_10to12, column.sep.width = "1pt")
+
+stargazer(FE_time_16to18, FE_time_14to16, FE_time_12to14, FE_time_10to12,
+          column.sep.width = "1pt")
+# -------------------------------------------------------------------------
+
+# regression using 3-year window
+
+reg_pooled_10to14 = plm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_10to14, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+FE_time_10to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to14, index=c("pid", "intyear"),
+           model="within", effect="time")
+
+FE_indiv_10to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to14, index=c("pid", "intyear"),
+           model="within", effect="individual")
+
+FE_twoways_10to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to14, index=c("pid", "intyear"),
            model="within", effect="twoways")
-coef(summary(FE))[1:2,]
-```
-Note the change in the democracy coefficient and lack of significance of income.
 
-Arellano-Bond one-step estimator.
-The formula has three parts: the first contains the explanatory variables and the second the “gmm” instruments (history of lags of y). The option effect="twoways" adds year dummy variables into the model. The lag subscript on the "gmm" instrument, 2:99, is longer than the time dimension of the data, but any extra length of the vector past actual data is simply ignored by R. This is useful especially for unbalanced panels with different histories for different individuals.
+stargazer(reg_pooled_10to14, FE_time_10to14, FE_indiv_10to14, FE_twoways_10to14)
+# -------------------------------------------------------------------------
+```
+
+
 ```{r}
-diff1 <- pgmm(democracy ~ lag(democracy) + lag(income) | lag(democracy, 2:99),
-              data=cfps, index=c("country", "year"),
+# variable selection using AIC and BIC
+
+# variable selection using AIC
+sel.var.aic <- step(object=FE_time_16to18, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ lag(math) + divorced_dummy, upper=FE_time_16to18))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using AIC
+sel.var.bic <- step(model.lm, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=BPSysAve ~ SmokeNow, upper=model.lm)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+
+# -------------------------------------------------------------------------
+
+# AB one-step, AB two-step, and system GMM does not work on panel data with 2 periods.
+# These models need more lags to work as instruments. Use 2010-2014 subset as that subset
+# contains the most observations with divorce_dummy=1.
+
+FE_twoways_10to14_AB_onestep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f| lag(math, 2:99),
+              data=cfps_10to14, index=c("pid", "intyear"),
               model="onestep", effect="twoways")
-coef(summary(diff1))[1:2,]
-```
 
-Arellano-Bond two-step estimator
-```{r}
-diff2 <- pgmm(democracy ~ lag(democracy) + lag(income) | lag(democracy, 2:99),
-              data=cfps, index=c("country", "year"),
+FE_twoways_10to14_AB_twostep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
+              data=cfps_10to14, index=c("pid", "intyear"),
               model="twosteps", effect="twoways")
-coef(summary(diff2))[1:2,]
+
+stargazer(FE_twoways_10to14_AB_onestep, FE_twoways_10to14_AB_twostep)
+ 
+# System GMM requires even more lags, so with t=1,2,3, sysGMM won't run.
+FE_time_10to14_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
+             data=cfps_10to14, index=c("pid", "intyear"),
+             model="twosteps", effect="twoways", transformation = "ld")
 ```
 
-System GMM estimator. The change from Arellano-Bond is that the argument "transformation", which defaults to "d" for difference, must be set to "ld" (for level and difference).
+
 ```{r}
-sys2 <- pgmm(democracy ~ lag(democracy) + lag(income) |
-             lag(democracy, 2:99),
-             data=cfps, index=c("country", "year"),
-             model="twosteps", effect="twoways",
-             transformation = "ld")
-coef(summary(sys2))[1:2,]
+### ------- Propensity score ------- 
+
+
+#FE_logit_16to18 = clogit(divorced_dummy ~ total_salary + urban + board_school
+#             + total_fam_tut_hrs + educ_years_m + educ_years_f, effect="twoways",
+#            data = cfps_16to18, method="exact")
+
+
+# Run logit on entire dataset
+logit_alldata = glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final, family = "binomial")
+cfps_final$propensity <- logit_alldata$fitted.values # append fitted vaules to dataframe
+
+# move all observations with divorced_dummy=1 into separate dataframe
+cfps_final_prop_match = cfps_final[cfps_final$divorced_dummy == 1,] 
+# move all observations with divorced_dummy=0 into separate dataframe
+cfps_final_prop_match_donor = cfps_final[cfps_final$divorced_dummy == 0,] 
+
+# Search cfps_final for the observations with propensity closest to the children with divorced_dummy=1
+diff = vector(mode="numeric", length=nrow(cfps_final_prop_match_donor) ) # initialize empty vector
+
+# The outer for-loop (index i) is looping through the propensity score column of the recipient dataframe.
+# Fix i=1, we have the 1st propensity score in the recipient df The inner for-loop (index j)
+# loops through the donor df For each j, it stores the absolute difference between the 1st 
+# propensity score in the recipient df and the jth propensity score in the donor df into
+# the vector called diff. Once the inner for-loop is complete, we have the absolute difference between the
+# 1st propensity score in the recipient df and every propensity score in the donor df. We then find the
+# index of the smallest difference using which.min(diff). This tells us which row in the donor df has the
+# closest propensity score to the 1st propensity score in the recipient df. Then we take this row from the
+# donor df and append it to the recipient df. Then we repeat for the 2nd propensity score in the recipient df,
+# so i=2, and so on.
+for (i in 1:33) {
+  for (j in 1:nrow(cfps_final_prop_match_donor)) {
+    diff[j] = abs( cfps_final_prop_match$propensity[i] - cfps_final_prop_match_donor$propensity[j] )
+  }
+  #index[i] = which.min(diff)
+  cfps_final_prop_match[nrow(cfps_final_prop_match) + 1,] = cfps_final_prop_match_donor[which.min(diff),]
+}
+
+# Now run pooled OLS on the dataset
+reg_pooled_prop_match = lm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_final_prop_match)
+
+# -------------------------------------------------------------------------
+
+
+cfps_16to18 <- cfps_final[cfps_final$intyear == 2018 | cfps_final$intyear == 2016,]
+
+
+
+
+# Filter cfps_final to obtain observations such that the pid appears at least twice.
+# Each child needs to be observed at least twice to be able to estimate fixed effects.
+cfps_final_atleast2 = cfps_final %>% group_by(pid) %>% filter(n()>1)
+
+# Filter cfps_final_atleast2 for 2010 observations.
+cfps_final_atleast2_2010 = cfps_final_atleast2[cfps_final_atleast2$intyear == 2010,]
+cfps_final_atleast2_2012 = cfps_final_atleast2[cfps_final_atleast2$intyear == 2012,]
+cfps_final_atleast2_2014 = cfps_final_atleast2[cfps_final_atleast2$intyear == 2014,]
+cfps_final_atleast2_2016 = cfps_final_atleast2[cfps_final_atleast2$intyear == 2016,]
+cfps_final_atleast2_2018 = cfps_final_atleast2[cfps_final_atleast2$intyear == 2018,]
+
+# Run logit on each year separately
+logit_2010 <- glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final_atleast2_2010, family = "binomial")
+cfps_final_atleast2_2010$propensity <- logit_2010$fitted.values # append fitted vaules to dataframe
+
+# search cfps_final_atleast2_2010 
+
+# 2012
+logit_2012 <- glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final_atleast2_2012, family = "binomial")
+cfps_final_atleast2_2012$propensity <- logit_2012$fitted.values
+
+
+# 2014
+logit_2014 <- glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final_atleast2_2014, family = "binomial")
+
+cfps_final_atleast2_2014$propensity <- logit_2010$fitted.values
+
+# 2016
+logit_2016 <- glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final_atleast2_2016, family = "binomial")
+
+cfps_final_atleast2_2016$propensity <- logit_2016$fitted.values
+
+# 2018
+logit_2018 <- glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_final_atleast2_2018, family = "binomial")
+
+cfps_final_atleast2_2018$propensity <- logit_2018$fitted.values
+
+
+FE_logit_cfps_final = clogit(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, effect="twoways",
+            data = cfps_final, method="exact")
+
+# obtain fitted values
+newdata1 <- with(cfps_16to18, data.frame(divorced_dummy, total_salary, urban, board_school,
+              total_fam_tut_hrs, educ_years_m, educ_years_f))
+
+FE_logit_16to18_pred <- predict(FE_logit_16to18, newdata = newdata1, type = "expected")
+# CHECK IF TYPE="EXPECTED" IS THE CORRECT ARGUMENT
+
+# append fitted propensity to cfps_16to18
+cfps_16to18$prop_score = FE_logit_16to18_pred
+
+# for each observation with divorce_dummy = 1 in cfps_16to18, find the observation with
+# propensity score closest to that observation
+cfps_16to18_divorced <- cfps_16to18[cfps_16to18$divorced_dummy == 1,] 
+
+
+
+
 ```
 
-Output results in LaTeX in table format
-```{r warning=FALSE}
-stargazer(diff1, diff2, sys2, title="Dynamic Panel Data", 
-          column.labels=c("AB one step", "AB two steps", "System GMM"), 
-          no.space = TRUE, omit.stat=c("f", "ser"))
-```
+
+
+
