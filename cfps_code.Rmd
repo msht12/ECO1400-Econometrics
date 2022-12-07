@@ -181,21 +181,21 @@ cfps$ccp_parent = ifelse(cfps$ccp_m == 1 | cfps$ccp_f == 1, 1, 0)
 cfps$total_salary = cfps$salary_f  + cfps$salary_m
 
 # create dataset with only complete observations
-cfps_final <- cfps[!is.na(cfps$verbal),]                             # remove rows with NAs in verbal
-cfps_final <- cfps_final[!is.na(cfps_final$math),]                   # remove rows with NAs in math
-cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_f),]       # remove rows with NAs in divorced_dummy_f
-cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_m),]       # remove rows with NAs in divorced_dummy_m
-cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy),]         # remove rows with NAs in divorced_dummy
-cfps_final <- cfps_final[!is.na(cfps_final$salary_f),]               # remove rows with NAs in salary_f
-cfps_final <- cfps_final[!is.na(cfps_final$salary_m),]               # remove rows with NAs in salary_m
-cfps_final <- cfps_final[!is.na(cfps_final$educ_years_f),]           # remove rows with NAs in educ_years_f
-cfps_final <- cfps_final[!is.na(cfps_final$educ_years_m),]           # remove rows with NAs in educ_years_m
-cfps_final <- cfps_final[!is.na(cfps_final$urban),]                  # remove rows with NAs in urban
-cfps_final <- cfps_final[!is.na(cfps_final$urban_f),]                # remove rows with NAs in urban_f
-cfps_final <- cfps_final[!is.na(cfps_final$urban_m),]                # remove rows with NAs in urban_m
-cfps_final <- cfps_final[!is.na(cfps_final$board_school),]           # remove rows with NAs in board_school
-cfps_final <- cfps_final[!is.na(cfps_final$total_fam_tut_hrs),]      # remove rows with NAs in total_fam_tut_hrs
-#cfps_final <- cfps_final[!is.na(cfps_final$ccp_parent),]            # remove rows with NAs in ccp_parent
+cfps_final <- cfps[!is.na(cfps$verbal),]                          # remove rows with NAs in verbal
+cfps_final <- cfps_final[!is.na(cfps_final$math),]                # remove rows with NAs in math
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_f),]    # remove rows with NAs in divorced_dummy_f
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy_m),]    # remove rows with NAs in divorced_dummy_m
+cfps_final <- cfps_final[!is.na(cfps_final$divorced_dummy),]      # remove rows with NAs in divorced_dummy
+cfps_final <- cfps_final[!is.na(cfps_final$salary_f),]            # remove rows with NAs in salary_f
+cfps_final <- cfps_final[!is.na(cfps_final$salary_m),]            # remove rows with NAs in salary_m
+cfps_final <- cfps_final[!is.na(cfps_final$educ_years_f),]        # remove rows with NAs in educ_years_f
+cfps_final <- cfps_final[!is.na(cfps_final$educ_years_m),]        # remove rows with NAs in educ_years_m
+cfps_final <- cfps_final[!is.na(cfps_final$urban),]               # remove rows with NAs in urban
+cfps_final <- cfps_final[!is.na(cfps_final$urban_f),]             # remove rows with NAs in urban_f
+cfps_final <- cfps_final[!is.na(cfps_final$urban_m),]             # remove rows with NAs in urban_m
+cfps_final <- cfps_final[!is.na(cfps_final$board_school),]        # remove rows with NAs in board_school
+cfps_final <- cfps_final[!is.na(cfps_final$total_fam_tut_hrs),]   # remove rows with NAs in total_fam_tut_hrs
+#cfps_final <- cfps_final[!is.na(cfps_final$ccp_parent),]         # remove rows with NAs in ccp_parent
 
 # -----------------------------------------------------------------------------------------
 # Subset data into 2-CONSECUTIVE wave dataframes (e.g. 2010/2012, 2012/2014, ..., 2016/2018).
@@ -323,7 +323,7 @@ cfps_10to18 <- cfps_final %>% group_by(pid) %>% filter(n()>4)
 
 
 ```{r}
-### ------- Regressions ------- 
+### ------- Pooled Regressions - Math ------- 
 
 # pooled regression with all observations ignoring panel structure
 
@@ -332,7 +332,7 @@ reg_pooled = plm(math ~  total_salary + urban + board_school
            data=cfps_final, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-# regressions using 2-year windows
+# pooled regressions using 2-year windows
 
 reg_pooled_16to18 = plm(math ~  total_salary + urban + board_school
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
@@ -354,31 +354,94 @@ reg_pooled_10to12 = plm(math ~  total_salary + urban + board_school
            data=cfps_10to12, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-FE_time_16to18 <- plm(math ~ lag(math) + total_salary + urban + board_school
-            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
-          data = cfps_16to18, index=c("pid", "intyear"),
-           model="within", effect="time")
+# store results in Stargazer table
+stargazer(reg_pooled, reg_pooled_10to12, reg_pooled_12to14, reg_pooled_14to16, 
+          reg_pooled_16to18, column.sep.width = "1pt")
 
-FE_time_14to16 <- plm(math ~ lag(math) + total_salary + urban + board_school
-            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
-          data = cfps_14to16, index=c("pid", "intyear"),
-           model="within", effect="time")
 
-FE_time_12to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
-            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
-          data = cfps_12to14, index=c("pid", "intyear"),
-           model="within", effect="time")
+### ------- Pooled Regressions - Verbal ------- 
 
-FE_time_10to12 <- plm(math ~ lag(math) + total_salary + urban + board_school
+# pooled regression with all observations ignoring panel structure
+
+reg_pooled = plm(verbal ~  total_salary + urban + board_school
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
-          data = cfps_10to12, index=c("pid", "intyear"),
-           model="within", effect="time")
+           data=cfps_final, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+# pooled regressions using 2-year windows
+
+reg_pooled_16to18 = plm(verbal ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_16to18, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_14to16 = plm(verbal ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_14to16, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_12to14 = plm(verbal ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_12to14, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_10to12 = plm(verbal ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_10to12, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
 
 # store results in Stargazer table
-stargazer(reg_pooled, reg_pooled_16to18, reg_pooled_14to16, reg_pooled_12to14, 
-          reg_pooled_10to12, column.sep.width = "1pt")
+stargazer(reg_pooled, reg_pooled_10to12, reg_pooled_12to14, reg_pooled_14to16, 
+          reg_pooled_16to18, column.sep.width = "1pt")
 
-stargazer(FE_time_16to18, FE_time_14to16, FE_time_12to14, FE_time_10to12,
+### ----------------------------------------------------------- 
+
+### ------- FE Regressions - Math ------- 
+
+# Check for variation in divorced_dummy from 2016 to 2018. The list of PIDs for
+# observations with divorced_dummy=1 in 2016 should NOT be identical to the list of PIDs
+# for observations with divorced_dummy=1 in 2018. Otherwise, individual fixed effect will
+# cancel out the effect of divorce.
+
+# Check for variation in divorced_dummy from 2016 to 2018
+cfps_16to18[cfps_16to18$divorced_dummy == 1 & cfps_16to18$intyear == 2016,]$pid
+cfps_16to18[cfps_16to18$divorced_dummy == 1 & cfps_16to18$intyear == 2018,]$pid
+
+# Check for variation in divorced_dummy from 2014 to 2016
+cfps_14to16[cfps_14to16$divorced_dummy == 1 & cfps_14to16$intyear == 2014,]$pid
+cfps_14to16[cfps_14to16$divorced_dummy == 1 & cfps_14to16$intyear == 2016,]$pid
+
+# Check for variation in divorced_dummy from 2012 to 2014
+cfps_12to14[cfps_12to14$divorced_dummy == 1 & cfps_12to14$intyear == 2012,]$pid
+cfps_12to14[cfps_12to14$divorced_dummy == 1 & cfps_12to14$intyear == 2014,]$pid
+
+# Check for variation in divorced_dummy from 2010 to 2012
+cfps_10to12[cfps_10to12$divorced_dummy == 1 & cfps_10to12$intyear == 2010,]$pid
+cfps_10to12[cfps_10to12$divorced_dummy == 1 & cfps_10to12$intyear == 2012,]$pid
+
+# Two-way fixed effects regression with lag(math)
+FE_twoways_16to18 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_16to18, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_14to16 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_14to16, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_12to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_12to14, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_10to12 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to12, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+# store results in Stargazer table
+stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16to18,
           column.sep.width = "1pt")
 # -------------------------------------------------------------------------
 
@@ -499,11 +562,76 @@ reg_pooled_prop_match = lm(math ~  total_salary + urban + board_school
 
 # -------------------------------------------------------------------------
 
+# Repeat propensity score matching for 2016/2018 subset
 
-cfps_16to18 <- cfps_final[cfps_final$intyear == 2018 | cfps_final$intyear == 2016,]
+# --- 2016 ---
+cfps_2016 = cfps_16to18[cfps_16to18$intyear == 2016, ]
+
+# Run logit on the full 2016 subset
+logit_2016 = glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_2016, family = "binomial")
+cfps_2016$propensity <- logit_2016$fitted.values # append fitted vaules to dataframe
+
+# separate the observations with divorce_dummy=1 and divorce_dummy=0 into separate dataframes
+cfps_16_prop_match <- cfps_2016[cfps_2016$divorced_dummy == 1,]       # recipient df
+cfps_16_prop_match_donor <- cfps_2016[cfps_2016$divorced_dummy == 0,] # donor df
+
+# Search cfps_16_prop_match_donor for the observations with propensity closest to the children with divorced_dummy=1
+diff = vector(mode="numeric", length=nrow(cfps_16_prop_match_donor) ) # initialize empty vector
+
+for (i in 1:5) {
+  for (j in 1:nrow(cfps_16_prop_match_donor)) {
+    diff[j] = abs( cfps_16_prop_match$propensity[i] - cfps_16_prop_match_donor$propensity[j] )
+  }
+  #index[i] = which.min(diff)
+  cfps_16_prop_match[nrow(cfps_16_prop_match) + 1,] = cfps_16_prop_match_donor[which.min(diff),]
+}
+# --- 2016 complete ---
+
+
+# --- 2018 ---
+cfps_2018 = cfps_16to18[cfps_16to18$intyear == 2018, ]
+
+# Run logit on the full 2018 subset
+logit_2018 = glm(divorced_dummy ~ total_salary + urban + board_school
+             + total_fam_tut_hrs + educ_years_m + educ_years_f, 
+                  data = cfps_2018, family = "binomial")
+cfps_2018$propensity <- logit_2018$fitted.values # append fitted vaules to dataframe
+
+# separate the observations with divorce_dummy=1 and divorce_dummy=0 into separate dataframes
+cfps_18_prop_match <- cfps_2018[cfps_2018$divorced_dummy == 1,]       # recipient df
+cfps_18_prop_match_donor <- cfps_2018[cfps_2018$divorced_dummy == 0,] # donor df
+
+# Search cfps_16_prop_match_donor for the observations with propensity closest to the children with divorced_dummy=1
+diff = vector(mode="numeric", length=nrow(cfps_18_prop_match_donor) ) # initialize empty vector
+
+for (i in 1:9) {
+  for (j in 1:nrow(cfps_18_prop_match_donor)) {
+    diff[j] = abs( cfps_18_prop_match$propensity[i] - cfps_18_prop_match_donor$propensity[j] )
+  }
+  #index[i] = which.min(diff)
+  cfps_18_prop_match[nrow(cfps_18_prop_match) + 1,] = cfps_18_prop_match_donor[which.min(diff),]
+}
+
+# --- 2018 complete ---
+
+# combine the matched 2016 dataframe and the matched 2018 dataframe
+cfps_16to18_prop_match = rbind(cfps_16_prop_match, cfps_18_prop_match)
+
+# run regressions with the matched data
+
+# pooled reg
+reg_pooled_16to18_prop_match = lm(math ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_16to18_prop_match)
+
+# -------------------------------------------------------------------------
 
 
 
+
+# -------------------------------------------------------------------------
 
 # Filter cfps_final to obtain observations such that the pid appears at least twice.
 # Each child needs to be observed at least twice to be able to estimate fixed effects.
@@ -570,7 +698,6 @@ cfps_16to18$prop_score = FE_logit_16to18_pred
 # for each observation with divorce_dummy = 1 in cfps_16to18, find the observation with
 # propensity score closest to that observation
 cfps_16to18_divorced <- cfps_16to18[cfps_16to18$divorced_dummy == 1,] 
-
 
 
 
