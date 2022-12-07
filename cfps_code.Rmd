@@ -419,6 +419,36 @@ cfps_12to14[cfps_12to14$divorced_dummy == 1 & cfps_12to14$intyear == 2014,]$pid
 cfps_10to12[cfps_10to12$divorced_dummy == 1 & cfps_10to12$intyear == 2010,]$pid
 cfps_10to12[cfps_10to12$divorced_dummy == 1 & cfps_10to12$intyear == 2012,]$pid
 
+### ---- 2-way FE WITHOUT lag(math)
+
+# Two-way fixed effects regression without lag(math)
+FE_twoways_16to18 <- plm(math ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_16to18, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_14to16 <- plm(math ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_14to16, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_12to14 <- plm(math ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_12to14, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_10to12 <- plm(math ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to12, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+# store results in Stargazer table
+stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16to18,
+          column.sep.width = "1pt")
+# -------------------------------------------------------------------------
+
+### ---- 2-way FE WITH lag(math)
+
 # Two-way fixed effects regression with lag(math)
 FE_twoways_16to18 <- plm(math ~ lag(math) + total_salary + urban + board_school
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
@@ -436,6 +466,65 @@ FE_twoways_12to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
            model="within", effect="twoways")
 
 FE_twoways_10to12 <- plm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to12, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+# store results in Stargazer table
+stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16to18,
+          column.sep.width = "1pt")
+# -------------------------------------------------------------------------
+
+
+### ------- FE Regressions - Verbal ------- 
+
+### ---- 2-way FE WITHOUT lag(verbal)
+
+# Two-way fixed effects regression without lag(verbal)
+FE_twoways_16to18 <- plm(verbal ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_16to18, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_14to16 <- plm(verbal ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_14to16, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_12to14 <- plm(verbal ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_12to14, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_10to12 <- plm(verbal ~ total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_10to12, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+# store results in Stargazer table
+stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16to18,
+          column.sep.width = "1pt")
+# -------------------------------------------------------------------------
+
+### ---- 2-way FE WITH lag(verbal)
+
+# Two-way fixed effects regression with lag(verbal)
+FE_twoways_16to18 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_16to18, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_14to16 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_14to16, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_12to14 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+          data = cfps_12to14, index=c("pid", "intyear"),
+           model="within", effect="twoways")
+
+FE_twoways_10to12 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_10to12, index=c("pid", "intyear"),
            model="within", effect="twoways")
@@ -469,26 +558,6 @@ FE_twoways_10to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
 
 stargazer(reg_pooled_10to14, FE_time_10to14, FE_indiv_10to14, FE_twoways_10to14)
 # -------------------------------------------------------------------------
-```
-
-
-```{r}
-# variable selection using AIC and BIC
-
-# variable selection using AIC
-sel.var.aic <- step(object=FE_time_16to18, trace = 0, k = 2, direction = "both",
-                    scope=list(lower=math ~ lag(math) + divorced_dummy, upper=FE_time_16to18))
-select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
-select_var_aic
-
-
-# variable selection using AIC
-sel.var.bic <- step(model.lm, trace = 0, k = log(n), direction = "both",
-                    scope=list(lower=BPSysAve ~ SmokeNow, upper=model.lm)) 
-select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
-select.var.bic
-
-# -------------------------------------------------------------------------
 
 # AB one-step, AB two-step, and system GMM does not work on panel data with 2 periods.
 # These models need more lags to work as instruments. Use 2010-2014 subset as that subset
@@ -511,6 +580,65 @@ FE_time_10to14_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board_sc
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
              data=cfps_10to14, index=c("pid", "intyear"),
              model="twosteps", effect="twoways", transformation = "ld")
+
+
+# -------------------------------------------------------------------------
+
+# --- Dynamic two-way FE for math ---
+FE_twoways_12to18_AB_onestep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f| lag(math, 2:99),
+              data=cfps_12to18, index=c("pid", "intyear"),
+              model="onestep", effect="twoways")
+
+FE_twoways_12to18_AB_twostep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
+              data=cfps_12to18, index=c("pid", "intyear"),
+              model="twosteps", effect="twoways")
+
+FE_twoways_12to18_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
+             data=cfps_12to18, index=c("pid", "intyear"),
+             model="twosteps", effect="twoways", transformation = "ld")
+
+stargazer(FE_twoways_12to18_AB_onestep, FE_twoways_12to18_AB_twostep, FE_twoways_12to18_sysGMM)
+
+# --- Dynamic two-way FE for verbal ---
+FE_twoways_12to18_AB_onestep <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f| lag(verbal, 2:99),
+              data=cfps_12to18, index=c("pid", "intyear"),
+              model="onestep", effect="twoways")
+
+FE_twoways_12to18_AB_twostep <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(verbal, 2:99),
+              data=cfps_12to18, index=c("pid", "intyear"),
+              model="twosteps", effect="twoways")
+
+FE_twoways_12to18_sysGMM <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(verbal, 2:99),
+             data=cfps_12to18, index=c("pid", "intyear"),
+             model="twosteps", effect="twoways", transformation = "ld")
+
+stargazer(FE_twoways_12to18_AB_onestep, FE_twoways_12to18_AB_twostep, FE_twoways_12to18_sysGMM)
+```
+
+
+```{r}
+# variable selection using AIC and BIC
+
+# variable selection using AIC
+sel.var.aic <- step(object=FE_time_16to18, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ lag(math) + divorced_dummy, upper=FE_time_16to18))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using AIC
+sel.var.bic <- step(model.lm, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=BPSysAve ~ SmokeNow, upper=model.lm)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+
+# -------------------------------------------------------------------------
 ```
 
 
