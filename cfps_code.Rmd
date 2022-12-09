@@ -13,8 +13,9 @@ library(stargazer)
 library(dplyr)
 library(survival) # function: clogit
 library(aod)
-library(xtable)
+library(xtable) # make LaTeX tables
 library(latex2exp)
+library(psych)
 ```
 
 Cursory data cleaning was done in Python. Import data into R.
@@ -117,6 +118,11 @@ cfps$math_adj[cfps$math == 3] <- 2   # 3: average
 cfps$math_adj[cfps$math == 4] <- 1   # 4: poor
 cfps$math_adj[cfps$math == -2] <- NA # -2: NA
 
+# change math (incorrect) to math adjusted (correct) and 
+# verbal (incorrect) to verbal adjusted (correct)
+cfps$math = cfps$math_adj
+cfps$verbal = cfps$verbal_adj
+
 cfps$marital_f[cfps$marital_f == 1] <- "never married" 
 cfps$marital_f[cfps$marital_f == 2] <- "married" 
 cfps$marital_f[cfps$marital_f == 3] <- "cohabitation" 
@@ -160,7 +166,6 @@ cfps$salary_m[cfps$salary_m == -1] <- NA # -9: missing
 cfps$total_fam_tut_hrs = cfps$fam_member_tut_hrs1 + cfps$fam_member_tut_hrs2 + 
   cfps$fam_member_tut_hrs3  + cfps$fam_member_tut_hrs4  + cfps$fam_member_tut_hrs5 
 
-
 # create dummy variables to identify whether parent is divorced (1) or otherwise (0)
 # father
 cfps$divorced_dummy_f = ifelse(cfps$marital_f == "divorced" 
@@ -175,7 +180,6 @@ cfps$divorced_dummy = ifelse(cfps$marital_m == "divorced" | cfps$marital_f == "d
 
 # create dummy var that identifies if child has at least 1 divorced parent
 cfps$ccp_parent = ifelse(cfps$ccp_m == 1 | cfps$ccp_f == 1, 1, 0)
-
 
 # total salary of both parents combined
 cfps$total_salary = cfps$salary_f  + cfps$salary_m
@@ -310,6 +314,11 @@ cfps_10to18 <- cfps_final %>% group_by(pid) %>% filter(n()>4)
 
 # -------------------------------------------------------------------------
 
+# --- Summary statistics ---
+sum_stats = select(cfps_final, c('math','verbal','total_salary','urban','divorced_dummy',
+                         'total_fam_tut_hrs','educ_years_m','educ_years_f','age'))
+sum_stats_table = describe(sum_stats, fast=TRUE)
+xtable(sum_stats_table)
 ```
 
 ```{r, include=FALSE}
@@ -327,29 +336,29 @@ cfps_10to18 <- cfps_final %>% group_by(pid) %>% filter(n()>4)
 
 # pooled regression with all observations ignoring panel structure
 
-reg_pooled = plm(math ~  total_salary + urban + board_school
+reg_pooled = plm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_final, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
 # pooled regressions using 2-year windows
 
-reg_pooled_16to18 = plm(math ~  total_salary + urban + board_school
+reg_pooled_16to18 = plm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_16to18, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_14to16 = plm(math ~  total_salary + urban + board_school
+reg_pooled_14to16 = plm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_14to16, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_12to14 = plm(math ~  total_salary + urban + board_school
+reg_pooled_12to14 = plm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_12to14, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_10to12 = plm(math ~  total_salary + urban + board_school
+reg_pooled_10to12 = plm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_10to12, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
@@ -358,34 +367,185 @@ reg_pooled_10to12 = plm(math ~  total_salary + urban + board_school
 stargazer(reg_pooled, reg_pooled_10to12, reg_pooled_12to14, reg_pooled_14to16, 
           reg_pooled_16to18, column.sep.width = "1pt")
 
+
+# ---------------------------- test # ---------------------------- 
+# pooled regression with all observations ignoring panel structure
+
+reg_pooled = plm(math ~  total_salary + total_salary^2 + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_final, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+# pooled regressions using 2-year windows
+
+reg_pooled_16to18 = plm(math ~  total_salary + total_salary^2 + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_16to18, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_14to16 = plm(math ~  total_salary + total_salary^2 + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_14to16, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_12to14 = plm(math ~  total_salary + total_salary^2 + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_12to14, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+reg_pooled_10to12 = plm(math ~  total_salary + total_salary^2 + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_10to12, index=c("pid", "intyear"),
+           model="pooling", effect="twoways")
+
+# store results in Stargazer table
+stargazer(reg_pooled, reg_pooled_10to12, reg_pooled_12to14, reg_pooled_14to16, 
+          reg_pooled_16to18, column.sep.width = "1pt")
+
+# ---------------------------- test # ---------------------------- 
+
+# -------------------------------------------------------------------------
+# Note that the step function in R for variable selection using AIC/BIC only works
+# on lm and glm objects, plm won't work. Since pooled reg is equivalent to regular
+# OLS, use lm function instead of plm to run pooled regressions.
+
+# --- pooled reg with full dataset ---
+reg_pooled = lm(math ~  total_salary + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_final)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+
+# run regressions according to AIC and BIC
+reg_pooled_aic = lm(math ~ urban + divorced_dummy 
+            + total_fam_tut_hrs + educ_years_m + educ_years_f, data=cfps_final)
+
+reg_pooled_bic = lm(math ~ urban + divorced_dummy
+           + total_fam_tut_hrs + educ_years_m + educ_years_f, data=cfps_final)
+
+# store results in Stargazer table (start with full model as a baseline)
+stargazer(reg_pooled, reg_pooled_aic, reg_pooled_bic)
+# -------------------------------------------------------------------------
+
+# --- pooled reg with 2016/2018 dataset ---
+reg_pooled_16to18 = lm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_16to18)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled_16to18, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_16to18))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled_16to18, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_16to18)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+# -------------------------------------------------------------------------
+
+# --- pooled reg with 2014/2016 dataset ---
+reg_pooled_14to16 = lm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_14to16)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled_14to16, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_14to16))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled_14to16, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_14to16)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+# -------------------------------------------------------------------------
+
+# --- pooled reg with 2012/2014 dataset ---
+reg_pooled_12to14 = lm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_12to14)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled_12to14, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_12to14))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled_12to14, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_12to14)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+# -------------------------------------------------------------------------
+
+# --- pooled reg with 2010/2012 dataset ---
+reg_pooled_10to12 = lm(math ~  total_salary + urban + board_school
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_10to12)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled_10to12, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_10to12))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled_10to12, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=math ~ divorced_dummy, upper=reg_pooled_10to12)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+# -------------------------------------------------------------------------
 
 ### ------- Pooled Regressions - Verbal ------- 
 
 # pooled regression with all observations ignoring panel structure
 
-reg_pooled = plm(verbal ~  total_salary + urban + board_school
+reg_pooled = plm(verbal ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_final, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
 # pooled regressions using 2-year windows
 
-reg_pooled_16to18 = plm(verbal ~  total_salary + urban + board_school
+reg_pooled_16to18 = plm(verbal ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_16to18, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_14to16 = plm(verbal ~  total_salary + urban + board_school
+reg_pooled_14to16 = plm(verbal ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_14to16, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_12to14 = plm(verbal ~  total_salary + urban + board_school
+reg_pooled_12to14 = plm(verbal ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_12to14, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
 
-reg_pooled_10to12 = plm(verbal ~  total_salary + urban + board_school
+reg_pooled_10to12 = plm(verbal ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_10to12, index=c("pid", "intyear"),
            model="pooling", effect="twoways")
@@ -393,6 +553,42 @@ reg_pooled_10to12 = plm(verbal ~  total_salary + urban + board_school
 # store results in Stargazer table
 stargazer(reg_pooled, reg_pooled_10to12, reg_pooled_12to14, reg_pooled_14to16, 
           reg_pooled_16to18, column.sep.width = "1pt")
+
+
+# -------------------------------------------------------------------------
+# Note the step function in R for variable selection using AIC/BIC only works
+# on lm and glm objects, plm won't work. Since pooled reg is equivalent to regular
+# OLS, use lm function instead of plm to run pooled regressions.
+
+# --- pooled reg with full dataset ---
+reg_pooled = lm(verbal ~  total_salary + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_final)
+
+# variable selection using AIC
+sel.var.aic <- step(object=reg_pooled, trace = 0, k = 2, direction = "both",
+                    scope=list(lower=verbal ~ divorced_dummy, upper=reg_pooled))
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+
+# variable selection using BIC
+n=nrow(cfps_final)
+sel.var.bic <- step(object=reg_pooled, trace = 0, k = log(n), direction = "both",
+                    scope=list(lower=verbal ~ divorced_dummy, upper=reg_pooled)) 
+select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
+select.var.bic
+
+# run regressions according to AIC and BIC
+reg_pooled_aic = lm(verbal ~ urban + divorced_dummy 
+            + total_fam_tut_hrs + educ_years_m + educ_years_f, data=cfps_final)
+
+reg_pooled_bic = lm(verbal ~  divorced_dummy
+           + total_fam_tut_hrs + educ_years_m + educ_years_f, data=cfps_final)
+
+# store results in Stargazer table (start with full model as a baseline)
+stargazer(reg_pooled, reg_pooled_aic, reg_pooled_bic)
+# -------------------------------------------------------------------------
 
 ### ----------------------------------------------------------- 
 
@@ -422,22 +618,22 @@ cfps_10to12[cfps_10to12$divorced_dummy == 1 & cfps_10to12$intyear == 2012,]$pid
 ### ---- 2-way FE WITHOUT lag(math)
 
 # Two-way fixed effects regression without lag(math)
-FE_twoways_16to18 <- plm(math ~ total_salary + urban + board_school
+FE_twoways_16to18 <- plm(math ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_16to18, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_14to16 <- plm(math ~ total_salary + urban + board_school
+FE_twoways_14to16 <- plm(math ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_14to16, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_12to14 <- plm(math ~ total_salary + urban + board_school
+FE_twoways_12to14 <- plm(math ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_12to14, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_10to12 <- plm(math ~ total_salary + urban + board_school
+FE_twoways_10to12 <- plm(math ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_10to12, index=c("pid", "intyear"),
            model="within", effect="twoways")
@@ -450,22 +646,22 @@ stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16
 ### ---- 2-way FE WITH lag(math)
 
 # Two-way fixed effects regression with lag(math)
-FE_twoways_16to18 <- plm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_16to18 <- plm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_16to18, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_14to16 <- plm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_14to16 <- plm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_14to16, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_12to14 <- plm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_12to14 <- plm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_12to14, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_10to12 <- plm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_10to12 <- plm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_10to12, index=c("pid", "intyear"),
            model="within", effect="twoways")
@@ -481,22 +677,22 @@ stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16
 ### ---- 2-way FE WITHOUT lag(verbal)
 
 # Two-way fixed effects regression without lag(verbal)
-FE_twoways_16to18 <- plm(verbal ~ total_salary + urban + board_school
+FE_twoways_16to18 <- plm(verbal ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_16to18, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_14to16 <- plm(verbal ~ total_salary + urban + board_school
+FE_twoways_14to16 <- plm(verbal ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_14to16, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_12to14 <- plm(verbal ~ total_salary + urban + board_school
+FE_twoways_12to14 <- plm(verbal ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_12to14, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_10to12 <- plm(verbal ~ total_salary + urban + board_school
+FE_twoways_10to12 <- plm(verbal ~ total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_10to12, index=c("pid", "intyear"),
            model="within", effect="twoways")
@@ -509,22 +705,22 @@ stargazer(FE_twoways_10to12, FE_twoways_12to14, FE_twoways_14to16, FE_twoways_16
 ### ---- 2-way FE WITH lag(verbal)
 
 # Two-way fixed effects regression with lag(verbal)
-FE_twoways_16to18 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_16to18 <- plm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_16to18, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_14to16 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_14to16 <- plm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_14to16, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_12to14 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_12to14 <- plm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_12to14, index=c("pid", "intyear"),
            model="within", effect="twoways")
 
-FE_twoways_10to12 <- plm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_10to12 <- plm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
           data = cfps_10to12, index=c("pid", "intyear"),
            model="within", effect="twoways")
@@ -585,17 +781,17 @@ FE_time_10to14_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board_sc
 # -------------------------------------------------------------------------
 
 # --- Dynamic two-way FE for math ---
-FE_twoways_12to18_AB_onestep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_12to18_AB_onestep <- pgmm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f| lag(math, 2:99),
               data=cfps_12to18, index=c("pid", "intyear"),
               model="onestep", effect="twoways")
 
-FE_twoways_12to18_AB_twostep <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_12to18_AB_twostep <- pgmm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
               data=cfps_12to18, index=c("pid", "intyear"),
               model="twosteps", effect="twoways")
 
-FE_twoways_12to18_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board_school
+FE_twoways_12to18_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(math, 2:99),
              data=cfps_12to18, index=c("pid", "intyear"),
              model="twosteps", effect="twoways", transformation = "ld")
@@ -603,17 +799,17 @@ FE_twoways_12to18_sysGMM <- pgmm(math ~ lag(math) + total_salary + urban + board
 stargazer(FE_twoways_12to18_AB_onestep, FE_twoways_12to18_AB_twostep, FE_twoways_12to18_sysGMM)
 
 # --- Dynamic two-way FE for verbal ---
-FE_twoways_12to18_AB_onestep <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_12to18_AB_onestep <- pgmm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f| lag(verbal, 2:99),
               data=cfps_12to18, index=c("pid", "intyear"),
               model="onestep", effect="twoways")
 
-FE_twoways_12to18_AB_twostep <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_12to18_AB_twostep <- pgmm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(verbal, 2:99),
               data=cfps_12to18, index=c("pid", "intyear"),
               model="twosteps", effect="twoways")
 
-FE_twoways_12to18_sysGMM <- pgmm(verbal ~ lag(verbal) + total_salary + urban + board_school
+FE_twoways_12to18_sysGMM <- pgmm(verbal ~ lag(verbal) + total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f | lag(verbal, 2:99),
              data=cfps_12to18, index=c("pid", "intyear"),
              model="twosteps", effect="twoways", transformation = "ld")
@@ -632,7 +828,7 @@ select_var_aic <- attr(terms(sel.var.aic), "term.labels")
 select_var_aic
 
 
-# variable selection using AIC
+# variable selection using BIC
 sel.var.bic <- step(model.lm, trace = 0, k = log(n), direction = "both",
                     scope=list(lower=BPSysAve ~ SmokeNow, upper=model.lm)) 
 select.var.bic<-attr(terms(sel.var.bic), "term.labels")   
@@ -645,14 +841,12 @@ select.var.bic
 ```{r}
 ### ------- Propensity score ------- 
 
-
 #FE_logit_16to18 = clogit(divorced_dummy ~ total_salary + urban + board_school
 #             + total_fam_tut_hrs + educ_years_m + educ_years_f, effect="twoways",
 #            data = cfps_16to18, method="exact")
 
-
 # Run logit on entire dataset
-logit_alldata = glm(divorced_dummy ~ total_salary + urban + board_school
+logit_alldata = glm(divorced_dummy ~ total_salary + urban
              + total_fam_tut_hrs + educ_years_m + educ_years_f, 
                   data = cfps_final, family = "binomial")
 cfps_final$propensity <- logit_alldata$fitted.values # append fitted vaules to dataframe
@@ -684,10 +878,15 @@ for (i in 1:33) {
 }
 
 # Now run pooled OLS on the dataset
-reg_pooled_prop_match = lm(math ~  total_salary + urban + board_school
+reg_pooled_prop_match = lm(math ~  total_salary + urban
             + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
            data=cfps_final_prop_match)
 
+reg_pooled_prop_match_verbal = lm(verbal ~  total_salary + urban
+            + divorced_dummy + total_fam_tut_hrs + educ_years_m + educ_years_f,
+           data=cfps_final_prop_match)
+
+stargazer(reg_pooled_prop_match, reg_pooled_prop_match_verbal)
 # -------------------------------------------------------------------------
 
 # Repeat propensity score matching for 2016/2018 subset
@@ -826,7 +1025,6 @@ cfps_16to18$prop_score = FE_logit_16to18_pred
 # for each observation with divorce_dummy = 1 in cfps_16to18, find the observation with
 # propensity score closest to that observation
 cfps_16to18_divorced <- cfps_16to18[cfps_16to18$divorced_dummy == 1,] 
-
 
 
 ```
